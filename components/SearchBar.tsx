@@ -13,7 +13,6 @@ export default function SearchBox() {
 
     useEffect(() => {
         if (query.trim().length < 3) {
-            setResults([]);
             return;
         }
         clearTimeout(debounceRef.current);
@@ -27,6 +26,13 @@ export default function SearchBox() {
         return () => clearTimeout(debounceRef.current);
     }, [query]);
 
+    function handleQueryChange(value: string) {
+        setQuery(value);
+        if (value.trim().length < 3) {
+            setResults([]);
+        }
+    }
+
     function selectResult(r: Result) {
         map.flyTo([parseFloat(r.lat), parseFloat(r.lon)], 15);
         setQuery(r.display_name);
@@ -37,7 +43,7 @@ export default function SearchBox() {
         <div style={{ position: 'absolute', top: 10, left: 50, zIndex: 1000, width: 300 }}>
             <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Search for a place…"
                 style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
             />
