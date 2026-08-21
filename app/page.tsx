@@ -1,12 +1,29 @@
-'use client';
+import Link from 'next/link';
+import MapLoader from '@/components/MapLoader';
+import { createClient } from '@/lib/supabase/server';
+import { signOut } from './actions'
 
-import dynamic from 'next/dynamic';
+export default async function Home() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-const Map = dynamic(() => import('@/components/Map'), {
-    ssr: false,
-    loading: () => <p>Loading map…</p>,
-});
+    return (
+        <div>
+            <MapLoader />
 
-export default function Home() {
-    return <Map />;
+            <div className='topRightContainer'>
+                {user ? (
+                    <span className='loginLink unselectable'>{user.email}</span>
+                ) : (
+                    <Link href="/login" className='loginLink'>Login</Link>
+                )}
+
+                {user ? (
+                    <form action={signOut}>
+                        <button type='submit' className='signOutButton'>Sign Out</button>
+                    </form>
+                ) : null}
+            </div>
+        </div>
+    )
 }
