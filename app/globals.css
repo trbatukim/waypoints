@@ -33,27 +33,51 @@ body {
 }
 
 .loginLink {
-    text-decoration: none;
-    color: black;
-    font-weight: 600;
-}
-
-.loginLinkContainer {
     padding: 10px 20px;
     border-radius: 9999px;
     background-color: rgba(255, 255, 255, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1000;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+
+    text-decoration: none;
+    color: black;
+    font-weight: 600; 
+}
+
+.unselectable {
+    -webkit-user-select: none;
+    -ms-user-select: none;     
+    user-select: none;         
+}
+
+.signOutButton {
+    padding: 11px 21px;
+    border-radius: 9999px;
+    background-color: rgba(255, 0, 0, 0.4);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1000;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 0px;
+
+    text-decoration: none;
+    color: rgb(105, 26, 26);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.topRightContainer {
     position: absolute;
     top: 10px;
     right: 10px;
     z-index: 1000;
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-}
-
-.unselectable {
-  -webkit-user-select: none;
-  -ms-user-select: none;     
-  user-select: none;         
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
 }
