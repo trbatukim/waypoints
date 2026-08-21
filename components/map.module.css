@@ -45,3 +45,36 @@
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     color: #171717 !important;
 }
+
+.pinPopup {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.pinName {
+    font-weight: 600;
+    color: #0a0a0a;
+}
+
+.pinDeleteButton {
+    border: none;
+    background: none;
+    padding: 0;
+    color: #c0392b;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pinPopupForm {
+    display: flex;
+}
+
+.pinPopupInput {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 180px;
+}

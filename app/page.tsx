@@ -9,7 +9,7 @@ export default async function Home() {
 
     return (
         <div>
-            <MapLoader />
+            <MapLoader userId={user?.id ?? null} />
 
             <div className='topRightContainer'>
                 {user ? (

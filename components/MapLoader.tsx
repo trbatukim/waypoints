@@ -7,6 +7,10 @@ const Map = dynamic(() => import('@/components/Map'), {
     loading: () => <p>Loading map…</p>,
 });
 
-export default function MapLoader() {
-    return <Map />;
+type MapLoaderProps = {
+    userId: string | null;
+};
+
+export default function MapLoader({ userId }: MapLoaderProps) {
+    return <Map userId={userId} />;
 }

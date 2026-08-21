@@ -6,7 +6,11 @@ import styles from './map.module.css';
 
 type Result = { display_name: string; lat: string; lon: string };
 
-export default function SearchBox() {
+type SearchBoxProps = {
+    onSelectResult: (lat: number, lng: number, name: string) => void;
+};
+
+export default function SearchBox({ onSelectResult }: SearchBoxProps) {
     const map = useMap();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<Result[]>([]);
@@ -35,7 +39,10 @@ export default function SearchBox() {
     }
 
     function selectResult(r: Result) {
-        map.flyTo([parseFloat(r.lat), parseFloat(r.lon)], 15);
+        const lat = parseFloat(r.lat);
+        const lng = parseFloat(r.lon);
+        map.flyTo([lat, lng], 15);
+        onSelectResult(lat, lng, r.display_name.split(',')[0]);
         setQuery(r.display_name);
         setResults([]);
     }
