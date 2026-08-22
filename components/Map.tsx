@@ -23,7 +23,13 @@ type MapProps = {
 export default function Map({ userId }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
+    const [prevUserId, setPrevUserId] = useState(userId);
     const supabase = createClient();
+
+    if (userId !== prevUserId) {
+        setPrevUserId(userId);
+        setOpinions({});
+    }
 
     useEffect(() => {
         supabase
@@ -36,10 +42,7 @@ export default function Map({ userId }: MapProps) {
     }, [supabase]);
 
     useEffect(() => {
-        if (!userId) {
-            setOpinions({});
-            return;
-        }
+        if (!userId) return;
 
         supabase
             .from('opinions')

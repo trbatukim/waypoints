@@ -84,13 +84,15 @@ function PinPopup({
 }) {
     const [rating, setRating] = useState(opinion?.rating ?? 0);
     const [review, setReview] = useState(opinion?.note ?? '');
+    const [prevOpinion, setPrevOpinion] = useState(opinion);
 
-    useEffect(() => {
+    if (opinion !== prevOpinion) {
+        setPrevOpinion(opinion);
         if (opinion) {
             setRating(opinion.rating);
             setReview(opinion.note);
         }
-    }, [opinion]);
+    }
 
     function saveOpinion() {
         if (rating === 0) return;
