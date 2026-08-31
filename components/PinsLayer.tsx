@@ -5,6 +5,7 @@ import { Marker, Popup, useMap } from 'react-leaflet';
 import L, { type LatLng } from 'leaflet';
 import styles from './map.module.css';
 import OpinionNote, { type Opinion, type PlaceOpinion } from './Opinion';
+import { vi } from 'vitest';
 
 export const PIN_DRAG_DATA_TYPE = 'application/x-waypoints-new-pin';
 
@@ -15,6 +16,8 @@ export type Pin = {
     lng: number;
     created_by: string;
 };
+
+let editing: boolean = false;
 
 type PinsLayerProps = {
     pins: Pin[];
@@ -86,9 +89,9 @@ function PinPopup({
 }) {
     const [rating, setRating] = useState(opinion?.rating ?? 0);
     const [review, setReview] = useState(opinion?.note ?? '');
+    const [editing, setEditing] = useState(false);
     const [prevOpinion, setPrevOpinion] = useState(opinion);
 
-    // Popup content mounts the first time the popup is opened, so this loads lazily.
     useEffect(() => {
         onLoadOpinions(pin.id);
     }, [pin.id, onLoadOpinions]);
@@ -107,27 +110,37 @@ function PinPopup({
     }
 
     return (
-        <div className={styles.pinPopup}>
+        <div className={styles.pinPopup} onClick={(e) => e.stopPropagation()}>
             <span className={styles.pinName}>{pin.name}</span>
 
-            <StarRating idPrefix={pin.id} value={rating} onChange={setRating} />
+            {!editing && (
+                <>
+                    <StarRating idPrefix={pin.id} value={rating} onChange={setRating} />
 
-            {placeOpinions && placeOpinions.length > 0 && (
-                <ul className={styles.opinionList}>
-                    {placeOpinions.map((placeOpinion) => (
-                        <li key={placeOpinion.id}>
-                            <OpinionNote note={placeOpinion.note} />
-                        </li>
-                    ))}
-                </ul>
+                    {placeOpinions && placeOpinions.length > 0 && (
+                        <ul className={styles.opinionList}>
+                            {placeOpinions.map((placeOpinion) => (
+                                <li key={placeOpinion.id}>
+                                    <OpinionNote note={placeOpinion.note} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <button type="button" onClick={() => setEditing(true)}>
+                        Edit review
+                    </button>
+                </>
             )}
 
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    saveOpinion();
-                }}
-            >
+            {editing && (
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        saveOpinion();
+                        setEditing(false);
+                    }}
+                >
                 <textarea
                     className={styles.reviewArea}
                     placeholder="Enter your review here..."
@@ -147,7 +160,7 @@ function PinPopup({
                         <path d="M214.051,148.16h43.08c3.131,0,5.668-2.538,5.668-5.669V59.584c0-3.13-2.537-5.668-5.668-5.668h-43.08 c-3.131,0-5.668,2.538-5.668,5.668v82.907C208.383,145.622,210.92,148.16,214.051,148.16z" />
                     </svg>
                 </button>
-            </form>
+            </form>)}
 
             <button className={styles.pinDeleteButton} onClick={() => onDeletePin(pin.id)}>
                 Delete
