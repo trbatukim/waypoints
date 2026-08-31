@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Marker, Popup, useMap } from 'react-leaflet';
 import L, { type LatLng } from 'leaflet';
 import styles from './map.module.css';
+import OpinionNote, { type Opinion, type PlaceOpinion } from './Opinion';
 
 export const PIN_DRAG_DATA_TYPE = 'application/x-waypoints-new-pin';
 
@@ -15,17 +16,14 @@ export type Pin = {
     created_by: string;
 };
 
-export type Opinion = {
-    rating: number;
-    note: string;
-};
-
 type PinsLayerProps = {
     pins: Pin[];
     opinions: Record<string, Opinion>;
+    placeOpinions: Record<string, PlaceOpinion[]>;
     onAddPin: (lat: number, lng: number, name: string) => void;
     onDeletePin: (id: string) => void;
     onSaveOpinion: (placeId: string, rating: number, review: string) => void;
+    onLoadOpinions: (placeId: string) => void;
 };
 
 const STAR_PATH = 'M12 2.5l2.97 6.28 6.91.68-5.15 4.75 1.44 6.79L12 17.27l-6.17 3.73 1.44-6.79-5.15-4.75 6.91-.68L12 2.5z';
@@ -74,17 +72,26 @@ function StarRating({
 function PinPopup({
     pin,
     opinion,
+    placeOpinions,
     onDeletePin,
     onSaveOpinion,
+    onLoadOpinions,
 }: {
     pin: Pin;
     opinion?: Opinion;
+    placeOpinions?: PlaceOpinion[];
     onDeletePin: (id: string) => void;
     onSaveOpinion: (placeId: string, rating: number, review: string) => void;
+    onLoadOpinions: (placeId: string) => void;
 }) {
     const [rating, setRating] = useState(opinion?.rating ?? 0);
     const [review, setReview] = useState(opinion?.note ?? '');
     const [prevOpinion, setPrevOpinion] = useState(opinion);
+
+    // Popup content mounts the first time the popup is opened, so this loads lazily.
+    useEffect(() => {
+        onLoadOpinions(pin.id);
+    }, [pin.id, onLoadOpinions]);
 
     if (opinion !== prevOpinion) {
         setPrevOpinion(opinion);
@@ -105,6 +112,16 @@ function PinPopup({
 
             <StarRating idPrefix={pin.id} value={rating} onChange={setRating} />
 
+            {placeOpinions && placeOpinions.length > 0 && (
+                <ul className={styles.opinionList}>
+                    {placeOpinions.map((placeOpinion) => (
+                        <li key={placeOpinion.id}>
+                            <OpinionNote note={placeOpinion.note} />
+                        </li>
+                    ))}
+                </ul>
+            )}
+
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
@@ -117,6 +134,7 @@ function PinPopup({
                     value={review}
                     onChange={(e) => setReview(e.target.value)}
                 ></textarea>
+
                 <button type="submit" className={styles.reviewSaveButton} aria-label="Save review">
                     <svg
                         width="16"
@@ -138,7 +156,15 @@ function PinPopup({
     );
 }
 
-export default function PinsLayer({ pins, opinions, onAddPin, onDeletePin, onSaveOpinion }: PinsLayerProps) {
+export default function PinsLayer({
+    pins,
+    opinions,
+    placeOpinions,
+    onAddPin,
+    onDeletePin,
+    onSaveOpinion,
+    onLoadOpinions,
+}: PinsLayerProps) {
     const [draft, setDraft] = useState<LatLng | null>(null);
     const [draftName, setDraftName] = useState('');
     const map = useMap();
@@ -183,8 +209,10 @@ export default function PinsLayer({ pins, opinions, onAddPin, onDeletePin, onSav
                         <PinPopup
                         pin={pin}
                         opinion={opinions[pin.id]}
+                        placeOpinions={placeOpinions[pin.id]}
                         onDeletePin={onDeletePin}
                         onSaveOpinion={onSaveOpinion}
+                        onLoadOpinions={onLoadOpinions}
                         />
                     </Popup>
                 </Marker>

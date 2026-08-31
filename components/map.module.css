@@ -175,3 +175,24 @@
     width: 310px;
     resize: none;
 }
+
+.opinionList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 310px;
+    max-height: 190px;
+    overflow-y: auto;
+}
+
+.opinionNote {
+    display: block;
+    height: 64px;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    cursor: default;
+}
