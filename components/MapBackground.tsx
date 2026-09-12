@@ -5,7 +5,7 @@ import { MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { configureMaplibre } from '@/lib/maplibre';
 
-const BACKGROUND_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+const BACKGROUND_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 
 export default function MapBackground() {
     const containerRef = useRef<HTMLDivElement>(null);
