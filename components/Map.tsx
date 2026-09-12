@@ -21,6 +21,21 @@ type MapProps = {
     userId: string | null;
 };
 
+type ProfileRef = { name: string | null } | { name: string | null }[] | null;
+
+type OpinionRow = {
+    id: string;
+    user_id: string;
+    rating: number | null;
+    note: string | null;
+    profiles: ProfileRef;
+};
+
+function profileName(profiles: ProfileRef) {
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    return profile?.name?.trim() || 'Someone';
+}
+
 export default function Map({ userId }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
@@ -67,7 +82,7 @@ export default function Map({ userId }: MapProps) {
         async (placeId: string) => {
             const { data, error } = await supabase
                 .from('opinions')
-                .select('id, note')
+                .select('id, user_id, rating, note, profiles(name)')
                 .eq('place_id', placeId)
                 .order('created_at', { ascending: true });
 
@@ -78,9 +93,13 @@ export default function Map({ userId }: MapProps) {
 
             setPlaceOpinions((prev) => ({
                 ...prev,
-                [placeId]: (data ?? [])
-                    .filter((o: PlaceOpinion) => o.note?.trim().length > 0)
-                    .map((o: PlaceOpinion) => ({ id: o.id, note: o.note })),
+                [placeId]: ((data ?? []) as OpinionRow[]).map((o) => ({
+                    id: o.id,
+                    userId: o.user_id,
+                    authorName: profileName(o.profiles),
+                    rating: (o.rating ?? 0) / 2,
+                    note: o.note?.trim() ?? '',
+                })),
             }));
         },
         [supabase]
@@ -142,6 +161,7 @@ export default function Map({ userId }: MapProps) {
 
                 <PinsLayer
                     pins={pins}
+                    userId={userId}
                     opinions={opinions}
                     placeOpinions={placeOpinions}
                     onAddPin={addPin}

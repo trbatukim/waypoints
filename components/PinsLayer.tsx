@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Marker, Popup, useMap } from 'react-leaflet';
 import L, { type LatLng } from 'leaflet';
 import styles from './map.module.css';
-import OpinionNote, { type Opinion, type PlaceOpinion } from './Opinion';
-import { vi } from 'vitest';
+import OpinionCard, { averageRating, type Opinion, type PlaceOpinion } from './Opinion';
+import { StarDisplay, StarRating } from './Stars';
 
 export const PIN_DRAG_DATA_TYPE = 'application/x-waypoints-new-pin';
 
@@ -17,10 +17,9 @@ export type Pin = {
     created_by: string;
 };
 
-let editing: boolean = false;
-
 type PinsLayerProps = {
     pins: Pin[];
+    userId: string | null;
     opinions: Record<string, Opinion>;
     placeOpinions: Record<string, PlaceOpinion[]>;
     onAddPin: (lat: number, lng: number, name: string) => void;
@@ -29,51 +28,9 @@ type PinsLayerProps = {
     onLoadOpinions: (placeId: string) => void;
 };
 
-const STAR_PATH = 'M12 2.5l2.97 6.28 6.91.68-5.15 4.75 1.44 6.79L12 17.27l-6.17 3.73 1.44-6.79-5.15-4.75 6.91-.68L12 2.5z';
-
-function StarRating({
-    idPrefix,
-    value,
-    onChange,
-}: {
-    idPrefix: string;
-    value: number;
-    onChange: (value: number) => void;
-}) {
-    return (
-        <div className={styles.starRating}>
-            {[1, 2, 3, 4, 5].map((star) => {
-                const fill = Math.min(1, Math.max(0, value - (star - 1)));
-                const clipId = `${idPrefix}-star-${star}`;
-
-                return (
-                    <button
-                        key={star}
-                        type="button"
-                        className={styles.starButton}
-                        aria-label={`Rate ${star} stars`}
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const clickedLeftHalf = e.clientX - rect.left < rect.width / 2;
-                            onChange(clickedLeftHalf ? star - 0.5 : star);
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d={STAR_PATH} fill="none" stroke="currentColor" strokeWidth="1.5" />
-                            <clipPath id={clipId}>
-                                <rect x="0" y="0" width={24 * fill} height="24" />
-                            </clipPath>
-                            <path d={STAR_PATH} fill="currentColor" clipPath={`url(#${clipId})`} />
-                        </svg>
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
-
 function PinPopup({
     pin,
+    userId,
     opinion,
     placeOpinions,
     onDeletePin,
@@ -81,6 +38,7 @@ function PinPopup({
     onLoadOpinions,
 }: {
     pin: Pin;
+    userId: string | null;
     opinion?: Opinion;
     placeOpinions?: PlaceOpinion[];
     onDeletePin: (id: string) => void;
@@ -104,63 +62,108 @@ function PinPopup({
         }
     }
 
+    const reviews = placeOpinions ?? [];
+    const average = averageRating(reviews);
+    const ratedCount = reviews.filter((placeOpinion) => placeOpinion.rating > 0).length;
+    const hasOwnReview = userId !== null && reviews.some((placeOpinion) => placeOpinion.userId === userId);
+
     function saveOpinion() {
         if (rating === 0) return;
         onSaveOpinion(pin.id, rating, review.trim());
+        setEditing(false);
+    }
+
+    function cancelEdit() {
+        setRating(opinion?.rating ?? 0);
+        setReview(opinion?.note ?? '');
+        setEditing(false);
     }
 
     return (
         <div className={styles.pinPopup} onClick={(e) => e.stopPropagation()}>
             <span className={styles.pinName}>{pin.name}</span>
 
+            {average === null ? (
+                <span className={styles.ratingEmpty}>No ratings yet</span>
+            ) : (
+                <div className={styles.ratingSummary}>
+                    <StarDisplay
+                        idPrefix={`average-${pin.id}`}
+                        value={average}
+                        label={`Average rating ${average.toFixed(1)} out of 5 stars`}
+                    />
+                    <span className={styles.ratingValue}>{average.toFixed(1)}</span>
+                    <span className={styles.ratingCount}>
+                        ({ratedCount} {ratedCount === 1 ? 'rating' : 'ratings'})
+                    </span>
+                </div>
+            )}
+
             {!editing && (
                 <>
-                    <StarRating idPrefix={pin.id} value={rating} onChange={setRating} />
-
-                    {placeOpinions && placeOpinions.length > 0 && (
+                    {reviews.length > 0 && (
                         <ul className={styles.opinionList}>
-                            {placeOpinions.map((placeOpinion) => (
+                            {reviews.map((placeOpinion) => (
                                 <li key={placeOpinion.id}>
-                                    <OpinionNote note={placeOpinion.note} />
+                                    <OpinionCard
+                                        opinion={placeOpinion}
+                                        isOwn={placeOpinion.userId === userId}
+                                    />
                                 </li>
                             ))}
                         </ul>
                     )}
 
-                    <button type="button" onClick={() => setEditing(true)}>
-                        Edit review
-                    </button>
+                    {userId && (
+                        <button type="button" className={styles.reviewEditButton} onClick={() => setEditing(true)}>
+                            {hasOwnReview ? 'Edit your review' : 'Write a review'}
+                        </button>
+                    )}
                 </>
             )}
 
-            {editing && (
+            {editing && userId && (
                 <form
+                    className={styles.reviewForm}
                     onSubmit={(e) => {
                         e.preventDefault();
                         saveOpinion();
-                        setEditing(false);
                     }}
                 >
-                <textarea
-                    className={styles.reviewArea}
-                    placeholder="Enter your review here..."
-                    value={review}
-                    onChange={(e) => setReview(e.target.value)}
-                ></textarea>
+                    <StarRating idPrefix={`edit-${pin.id}`} value={rating} onChange={setRating} />
 
-                <button type="submit" className={styles.reviewSaveButton} aria-label="Save review">
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 407.096 407.096"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path d="M402.115,84.008L323.088,4.981C319.899,1.792,315.574,0,311.063,0H17.005C7.613,0,0,7.614,0,17.005v373.086 c0,9.392,7.613,17.005,17.005,17.005h373.086c9.392,0,17.005-7.613,17.005-17.005V96.032 C407.096,91.523,405.305,87.197,402.115,84.008z M300.664,163.567H67.129V38.862h233.535V163.567z" />
-                        <path d="M214.051,148.16h43.08c3.131,0,5.668-2.538,5.668-5.669V59.584c0-3.13-2.537-5.668-5.668-5.668h-43.08 c-3.131,0-5.668,2.538-5.668,5.668v82.907C208.383,145.622,210.92,148.16,214.051,148.16z" />
-                    </svg>
-                </button>
-            </form>)}
+                    <textarea
+                        className={styles.reviewArea}
+                        placeholder="Enter your review here..."
+                        value={review}
+                        onChange={(e) => setReview(e.target.value)}
+                    />
+
+                    <div className={styles.reviewActions}>
+                        <button
+                            type="submit"
+                            className={styles.reviewSaveButton}
+                            aria-label="Save review"
+                            disabled={rating === 0}
+                        >
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 407.096 407.096"
+                                fill="currentColor"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path d="M402.115,84.008L323.088,4.981C319.899,1.792,315.574,0,311.063,0H17.005C7.613,0,0,7.614,0,17.005v373.086 c0,9.392,7.613,17.005,17.005,17.005h373.086c9.392,0,17.005-7.613,17.005-17.005V96.032 C407.096,91.523,405.305,87.197,402.115,84.008z M300.664,163.567H67.129V38.862h233.535V163.567z" />
+                                <path d="M214.051,148.16h43.08c3.131,0,5.668-2.538,5.668-5.669V59.584c0-3.13-2.537-5.668-5.668-5.668h-43.08 c-3.131,0-5.668,2.538-5.668,5.668v82.907C208.383,145.622,210.92,148.16,214.051,148.16z" />
+                            </svg>
+                        </button>
+
+                        <button type="button" className={styles.reviewCancelButton} onClick={cancelEdit}>
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            )}
 
             <button className={styles.pinDeleteButton} onClick={() => onDeletePin(pin.id)}>
                 Delete
@@ -171,6 +174,7 @@ function PinPopup({
 
 export default function PinsLayer({
     pins,
+    userId,
     opinions,
     placeOpinions,
     onAddPin,
@@ -220,12 +224,13 @@ export default function PinsLayer({
                 <Marker key={pin.id} position={[pin.lat, pin.lng]}>
                     <Popup className={styles.pinContainer}>
                         <PinPopup
-                        pin={pin}
-                        opinion={opinions[pin.id]}
-                        placeOpinions={placeOpinions[pin.id]}
-                        onDeletePin={onDeletePin}
-                        onSaveOpinion={onSaveOpinion}
-                        onLoadOpinions={onLoadOpinions}
+                            pin={pin}
+                            userId={userId}
+                            opinion={opinions[pin.id]}
+                            placeOpinions={placeOpinions[pin.id]}
+                            onDeletePin={onDeletePin}
+                            onSaveOpinion={onSaveOpinion}
+                            onLoadOpinions={onLoadOpinions}
                         />
                     </Popup>
                 </Marker>

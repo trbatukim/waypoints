@@ -171,7 +171,7 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
-CREATE POLICY "Authenticated delete opinions" ON "public"."opinions" FOR DELETE TO "authenticated" USING (true);
+CREATE POLICY "Authenticated delete own opinion" ON "public"."opinions" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -199,7 +199,7 @@ CREATE POLICY "Authenticated read profiles" ON "public"."profiles" FOR SELECT TO
 
 
 
-CREATE POLICY "Authenticated update own opinion" ON "public"."opinions" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Authenticated update own opinion" ON "public"."opinions" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 

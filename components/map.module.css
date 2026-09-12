@@ -188,11 +188,83 @@
     overflow-y: auto;
 }
 
+.opinionCard {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.opinionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.opinionAuthor {
+    font-weight: 600;
+    font-size: 12px;
+    color: #0a0a0a;
+}
+
 .opinionNote {
-    display: block;
-    height: 64px;
-    width: 100%;
-    box-sizing: border-box;
-    resize: none;
-    cursor: default;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #171717;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ratingSummary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ratingValue {
+    font-weight: 600;
+    font-size: 13px;
+    color: #0a0a0a;
+}
+
+.ratingCount {
+    font-size: 12px;
+    color: #5a5a5a;
+}
+
+.ratingEmpty {
+    font-size: 12px;
+    color: #5a5a5a;
+}
+
+.reviewForm {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.reviewActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reviewSaveButton:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.reviewEditButton,
+.reviewCancelButton {
+    border: none;
+    background: none;
+    padding: 0;
+    color: #0a0a0a;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
 }
