@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Marker, Popup, useMap } from 'react-leaflet';
-import L, { type LatLng } from 'leaflet';
+import L from 'leaflet';
 import styles from './map.module.css';
 import OpinionCard, { averageRating, type Opinion, type PlaceOpinion } from './Opinion';
 import { StarDisplay, StarRating } from './Stars';
@@ -17,11 +17,19 @@ export type Pin = {
     created_by: string;
 };
 
+export type PinDraft = {
+    lat: number;
+    lng: number;
+    name: string;
+};
+
 type PinsLayerProps = {
     pins: Pin[];
     userId: string | null;
     opinions: Record<string, Opinion>;
     placeOpinions: Record<string, PlaceOpinion[]>;
+    draft: PinDraft | null;
+    onDraftChange: (draft: PinDraft | null) => void;
     onAddPin: (lat: number, lng: number, name: string) => void;
     onDeletePin: (id: string) => void;
     onSaveOpinion: (placeId: string, rating: number, review: string) => void;
@@ -177,14 +185,21 @@ export default function PinsLayer({
     userId,
     opinions,
     placeOpinions,
+    draft,
+    onDraftChange,
     onAddPin,
     onDeletePin,
     onSaveOpinion,
     onLoadOpinions,
 }: PinsLayerProps) {
-    const [draft, setDraft] = useState<LatLng | null>(null);
-    const [draftName, setDraftName] = useState('');
     const map = useMap();
+
+    const draftLat = draft?.lat;
+    const draftLng = draft?.lng;
+    const draftPosition = useMemo(
+        () => (draftLat === undefined || draftLng === undefined ? null : L.latLng(draftLat, draftLng)),
+        [draftLat, draftLng]
+    );
 
     useEffect(() => {
         const container = map.getContainer();
@@ -200,8 +215,8 @@ export default function PinsLayer({
             e.preventDefault();
             const rect = container.getBoundingClientRect();
             const point = L.point(e.clientX - rect.left, e.clientY - rect.top);
-            setDraft(map.containerPointToLatLng(point));
-            setDraftName('');
+            const { lat, lng } = map.containerPointToLatLng(point);
+            onDraftChange({ lat, lng, name: '' });
         }
 
         container.addEventListener('dragover', handleDragOver);
@@ -210,12 +225,12 @@ export default function PinsLayer({
             container.removeEventListener('dragover', handleDragOver);
             container.removeEventListener('drop', handleDrop);
         };
-    }, [map]);
+    }, [map, onDraftChange]);
 
     function saveDraft() {
-        if (!draft || draftName.trim().length === 0) return;
-        onAddPin(draft.lat, draft.lng, draftName.trim());
-        setDraft(null);
+        if (!draft || draft.name.trim().length === 0) return;
+        onAddPin(draft.lat, draft.lng, draft.name.trim());
+        onDraftChange(null);
     }
 
     return (
@@ -236,27 +251,50 @@ export default function PinsLayer({
                 </Marker>
             ))}
 
-            {draft && (
-                <Popup
-                    position={draft}
-                    eventHandlers={{ remove: () => setDraft(null) }}
-                >
-                    <form
-                        className={styles.pinPopupForm}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            saveDraft();
-                        }}
+            {draft && draftPosition && (
+                <>
+                    <Marker position={draftPosition} opacity={0.6} />
+
+                    <Popup
+                        position={draftPosition}
+                        offset={[1, -34]}
+                        eventHandlers={{ remove: () => onDraftChange(null) }}
                     >
-                        <input
-                            autoFocus
-                            className={styles.pinPopupInput}
-                            value={draftName}
-                            onChange={(e) => setDraftName(e.target.value)}
-                            placeholder="Name this pin…"
-                        />
-                    </form>
-                </Popup>
+                        <form
+                            className={styles.pinPopupForm}
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                saveDraft();
+                            }}
+                        >
+                            <input
+                                autoFocus
+                                className={styles.pinPopupInput}
+                                value={draft.name}
+                                onChange={(e) => onDraftChange({ ...draft, name: e.target.value })}
+                                placeholder="Name this pin…"
+                            />
+
+                            <div className={styles.draftActions}>
+                                <button
+                                    type="submit"
+                                    className={styles.draftAddButton}
+                                    disabled={draft.name.trim().length === 0}
+                                >
+                                    Add pin
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className={styles.draftCancelButton}
+                                    onClick={() => onDraftChange(null)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </Popup>
+                </>
             )}
         </>
     );

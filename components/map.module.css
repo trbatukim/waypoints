@@ -109,6 +109,40 @@
 
 .pinPopupForm {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.draftActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.draftAddButton {
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    background-color: #171717;
+    color: #fafafa;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.draftAddButton:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.draftCancelButton {
+    border: none;
+    background: none;
+    padding: 0;
+    color: #5a5a5a;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
 }
 
 .pinPopupInput {

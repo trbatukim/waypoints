@@ -5,7 +5,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SearchBox from './SearchBar';
-import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin } from './PinsLayer';
+import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft } from './PinsLayer';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
 import styles from './map.module.css';
@@ -20,6 +20,8 @@ L.Icon.Default.mergeOptions({
 type MapProps = {
     userId: string | null;
 };
+
+const EXISTING_PIN_RADIUS_METERS = 50;
 
 type ProfileRef = { name: string | null } | { name: string | null }[] | null;
 
@@ -40,6 +42,7 @@ export default function Map({ userId }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
+    const [draft, setDraft] = useState<PinDraft | null>(null);
     const [prevUserId, setPrevUserId] = useState(userId);
     const supabase = createClient();
 
@@ -105,6 +108,22 @@ export default function Map({ userId }: MapProps) {
         [supabase]
     );
 
+    function pinNear(lat: number, lng: number) {
+        const target = L.latLng(lat, lng);
+        return pins.find(
+            (pin) => target.distanceTo(L.latLng(pin.lat, pin.lng)) <= EXISTING_PIN_RADIUS_METERS
+        );
+    }
+
+    function proposePin(lat: number, lng: number, name: string) {
+        if (!userId || pinNear(lat, lng)) {
+            setDraft(null);
+            return;
+        }
+
+        setDraft({ lat, lng, name });
+    }
+
     async function addPin(lat: number, lng: number, name: string) {
         if (!userId) return;
 
@@ -113,8 +132,13 @@ export default function Map({ userId }: MapProps) {
             .insert({ lat, lng, name, created_by: userId })
             .select('id, name, lat, lng, created_by')
             .single();
-        
-        if (!error && data) setPins((prev) => [...prev, data]);
+
+        if (error) {
+            console.error('Failed to add pin:', error);
+            return;
+        }
+
+        if (data) setPins((prev) => [...prev, data]);
     }
 
     async function deletePin(id: string) {
@@ -164,13 +188,15 @@ export default function Map({ userId }: MapProps) {
                     userId={userId}
                     opinions={opinions}
                     placeOpinions={placeOpinions}
+                    draft={draft}
+                    onDraftChange={setDraft}
                     onAddPin={addPin}
                     onDeletePin={deletePin}
                     onSaveOpinion={saveOpinion}
                     onLoadOpinions={loadPlaceOpinions}
                 />
 
-                <SearchBox onSelectResult={addPin} />
+                <SearchBox onSelectResult={proposePin} />
             </MapContainer>
 
             {userId && (
