@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS "public"."opinions" (
     "rating" smallint,
     "note" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "opinions_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 5)))
+    CONSTRAINT "opinions_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 10)))
 );
 
 
@@ -124,7 +124,7 @@ ALTER TABLE "public"."places" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
-    "name" "text" NOT NULL
+    "name" "text"
 );
 
 
@@ -171,7 +171,7 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
-CREATE POLICY "Authenticated delete opinions" ON "public"."opinions" FOR DELETE TO "authenticated" USING (true);
+CREATE POLICY "Authenticated delete own opinion" ON "public"."opinions" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -199,7 +199,7 @@ CREATE POLICY "Authenticated read profiles" ON "public"."profiles" FOR SELECT TO
 
 
 
-CREATE POLICY "Authenticated update own opinion" ON "public"."opinions" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Authenticated update own opinion" ON "public"."opinions" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 

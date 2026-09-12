@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SearchBox from './SearchBar';
-import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type Opinion } from './PinsLayer';
+import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft } from './PinsLayer';
+import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
 import styles from './map.module.css';
 
@@ -20,15 +21,35 @@ type MapProps = {
     userId: string | null;
 };
 
+const EXISTING_PIN_RADIUS_METERS = 50;
+
+type ProfileRef = { name: string | null } | { name: string | null }[] | null;
+
+type OpinionRow = {
+    id: string;
+    user_id: string;
+    rating: number | null;
+    note: string | null;
+    profiles: ProfileRef;
+};
+
+function profileName(profiles: ProfileRef) {
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    return profile?.name?.trim() || 'Someone';
+}
+
 export default function Map({ userId }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
+    const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
+    const [draft, setDraft] = useState<PinDraft | null>(null);
     const [prevUserId, setPrevUserId] = useState(userId);
     const supabase = createClient();
 
     if (userId !== prevUserId) {
         setPrevUserId(userId);
         setOpinions({});
+        setPlaceOpinions({});
     }
 
     useEffect(() => {
@@ -60,6 +81,49 @@ export default function Map({ userId }: MapProps) {
             });
     }, [supabase, userId]);
 
+    const loadPlaceOpinions = useCallback(
+        async (placeId: string) => {
+            const { data, error } = await supabase
+                .from('opinions')
+                .select('id, user_id, rating, note, profiles(name)')
+                .eq('place_id', placeId)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Failed to load opinions for place:', error);
+                return;
+            }
+
+            setPlaceOpinions((prev) => ({
+                ...prev,
+                [placeId]: ((data ?? []) as OpinionRow[]).map((o) => ({
+                    id: o.id,
+                    userId: o.user_id,
+                    authorName: profileName(o.profiles),
+                    rating: (o.rating ?? 0) / 2,
+                    note: o.note?.trim() ?? '',
+                })),
+            }));
+        },
+        [supabase]
+    );
+
+    function pinNear(lat: number, lng: number) {
+        const target = L.latLng(lat, lng);
+        return pins.find(
+            (pin) => target.distanceTo(L.latLng(pin.lat, pin.lng)) <= EXISTING_PIN_RADIUS_METERS
+        );
+    }
+
+    function proposePin(lat: number, lng: number, name: string) {
+        if (!userId || pinNear(lat, lng)) {
+            setDraft(null);
+            return;
+        }
+
+        setDraft({ lat, lng, name });
+    }
+
     async function addPin(lat: number, lng: number, name: string) {
         if (!userId) return;
 
@@ -68,8 +132,13 @@ export default function Map({ userId }: MapProps) {
             .insert({ lat, lng, name, created_by: userId })
             .select('id, name, lat, lng, created_by')
             .single();
-        
-        if (!error && data) setPins((prev) => [...prev, data]);
+
+        if (error) {
+            console.error('Failed to add pin:', error);
+            return;
+        }
+
+        if (data) setPins((prev) => [...prev, data]);
     }
 
     async function deletePin(id: string) {
@@ -99,6 +168,7 @@ export default function Map({ userId }: MapProps) {
         }
 
         setOpinions((prev) => ({ ...prev, [placeId]: { rating, note: review } }));
+        loadPlaceOpinions(placeId);
     }
 
     return (
@@ -114,14 +184,19 @@ export default function Map({ userId }: MapProps) {
                 />
 
                 <PinsLayer
-                pins={pins}
-                opinions={opinions}
-                onAddPin={addPin}
-                onDeletePin={deletePin}
-                onSaveOpinion={saveOpinion}
+                    pins={pins}
+                    userId={userId}
+                    opinions={opinions}
+                    placeOpinions={placeOpinions}
+                    draft={draft}
+                    onDraftChange={setDraft}
+                    onAddPin={addPin}
+                    onDeletePin={deletePin}
+                    onSaveOpinion={saveOpinion}
+                    onLoadOpinions={loadPlaceOpinions}
                 />
 
-                <SearchBox onSelectResult={addPin} />
+                <SearchBox onSelectResult={proposePin} />
             </MapContainer>
 
             {userId && (
