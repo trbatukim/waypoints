@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS "public"."opinions" (
     "rating" smallint,
     "note" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "opinions_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 5)))
+    CONSTRAINT "opinions_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 10)))
 );
 
 
@@ -124,7 +124,7 @@ ALTER TABLE "public"."places" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
-    "name" "text" NOT NULL
+    "name" "text"
 );
 
 
