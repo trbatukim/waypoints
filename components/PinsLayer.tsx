@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { Marker, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { useEffect } from 'react';
+import type { MapLibreMap } from 'maplibre-gl';
+import styles from './map.module.css';
+import MapMarker from './MapMarker';
 
 export const PIN_DRAG_DATA_TYPE = 'application/x-waypoints-new-pin';
 
@@ -32,6 +33,7 @@ export type MapFocus = {
 };
 
 type PinsLayerProps = {
+    map: MapLibreMap | null;
     pins: Pin[];
     selectedPinId: string | null;
     draft: PinDraft | null;
@@ -40,7 +42,22 @@ type PinsLayerProps = {
     onDropPin: (lat: number, lng: number, name: string) => void;
 };
 
+function PinGlyph({ selected }: { selected: boolean }) {
+    return (
+        <span className={`${styles.pin} ${selected ? styles.pinSelected : ''}`}>
+            <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M13 0C5.82 0 0 5.82 0 13c0 9.2 11.06 19.9 11.53 20.35a2.12 2.12 0 0 0 2.94 0C14.94 32.9 26 22.2 26 13 26 5.82 20.18 0 13 0z"
+                    fill="currentColor"
+                />
+                <circle cx="13" cy="12.6" r="4.6" fill="#ffffff" />
+            </svg>
+        </span>
+    );
+}
+
 export default function PinsLayer({
+    map,
     pins,
     selectedPinId,
     draft,
@@ -48,30 +65,22 @@ export default function PinsLayer({
     onSelectPin,
     onDropPin,
 }: PinsLayerProps) {
-    const map = useMap();
-
     useEffect(() => {
-        if (!focus) return;
+        if (!map || !focus) return;
 
-        const zoom = focus.zoom ?? map.getZoom();
-        const point = map.project([focus.lat, focus.lng], zoom);
-        const offset = !focus.offsetForPanel
-            ? L.point(0, 0)
-            : map.getSize().x <= NARROW_VIEWPORT
-              ? L.point(0, -SHEET_HEIGHT / 2)
-              : L.point(PANEL_WIDTH / 2, 0);
+        const narrow = map.getCanvas().clientWidth <= NARROW_VIEWPORT;
+        const offset: [number, number] = !focus.offsetForPanel
+            ? [0, 0]
+            : narrow
+              ? [0, -SHEET_HEIGHT / 2]
+              : [PANEL_WIDTH / 2, 0];
 
-        map.flyTo(map.unproject(point.subtract(offset), zoom), zoom);
+        map.flyTo({ center: [focus.lng, focus.lat], zoom: focus.zoom, offset });
     }, [map, focus]);
 
-    const draftLat = draft?.lat;
-    const draftLng = draft?.lng;
-    const draftPosition = useMemo(
-        () => (draftLat === undefined || draftLng === undefined ? null : L.latLng(draftLat, draftLng)),
-        [draftLat, draftLng]
-    );
-
     useEffect(() => {
+        if (!map) return;
+
         const container = map.getContainer();
 
         function handleDragOver(e: DragEvent) {
@@ -81,11 +90,10 @@ export default function PinsLayer({
         }
 
         function handleDrop(e: DragEvent) {
-            if (!e.dataTransfer?.types.includes(PIN_DRAG_DATA_TYPE)) return;
+            if (!map || !e.dataTransfer?.types.includes(PIN_DRAG_DATA_TYPE)) return;
             e.preventDefault();
             const rect = container.getBoundingClientRect();
-            const point = L.point(e.clientX - rect.left, e.clientY - rect.top);
-            const { lat, lng } = map.containerPointToLatLng(point);
+            const { lat, lng } = map.unproject([e.clientX - rect.left, e.clientY - rect.top]);
             onDropPin(lat, lng, '');
         }
 
@@ -97,18 +105,36 @@ export default function PinsLayer({
         };
     }, [map, onDropPin]);
 
+    if (!map) return null;
+
     return (
         <>
             {pins.map((pin) => (
-                <Marker
+                <MapMarker
                     key={pin.id}
-                    position={[pin.lat, pin.lng]}
-                    zIndexOffset={pin.id === selectedPinId ? 1000 : 0}
-                    eventHandlers={{ click: () => onSelectPin(pin.id) }}
-                />
+                    map={map}
+                    lat={pin.lat}
+                    lng={pin.lng}
+                    zIndex={pin.id === selectedPinId ? 2 : 1}
+                >
+                    <button
+                        type="button"
+                        className={styles.pinButton}
+                        aria-label={pin.name}
+                        onClick={() => onSelectPin(pin.id)}
+                    >
+                        <PinGlyph selected={pin.id === selectedPinId} />
+                    </button>
+                </MapMarker>
             ))}
 
-            {draftPosition && <Marker position={draftPosition} opacity={0.6} />}
+            {draft && (
+                <MapMarker map={map} lat={draft.lat} lng={draft.lng} zIndex={3}>
+                    <span className={styles.pinDraft}>
+                        <PinGlyph selected />
+                    </span>
+                </MapMarker>
+            )}
         </>
     );
 }

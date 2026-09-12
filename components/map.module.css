@@ -35,20 +35,6 @@
     color: #0a0a0a;
 }
 
-:global(.leaflet-control-zoom) {
-    border: none !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15) !important;
-    border-radius: 12px !important;
-    overflow: hidden;
-}
-
-:global(.leaflet-control-zoom a) {
-    background-color: rgba(255, 255, 255, 0.65) !important;
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    color: #171717 !important;
-}
-
 .starRating {
     display: flex;
     align-items: center;
@@ -401,4 +387,52 @@
     font-size: 12px;
     color: #5a5a5a;
     font-variant-numeric: tabular-nums;
+}
+
+.pinButton {
+    display: block;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.pin {
+    display: block;
+    color: #e04b3a;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+    transition: transform 120ms ease;
+    transform-origin: 50% 100%;
+}
+
+.pinSelected {
+    color: #1a73e8;
+    transform: scale(1.2);
+}
+
+.pinDraft {
+    display: block;
+    opacity: 0.75;
+}
+
+:global(.maplibregl-ctrl-group) {
+    border-radius: 10px !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+    overflow: hidden;
+}
+
+:global(.maplibregl-ctrl-group button) {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+:global(.maplibregl-ctrl-bottom-right) {
+    margin-bottom: 92px;
+}
+
+:global(.maplibregl-ctrl-attrib) {
+    border-radius: 8px 0 0 0;
+    font-size: 11px;
 }

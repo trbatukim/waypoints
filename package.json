@@ -8,21 +8,23 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sync:maplibre": "node scripts/sync-maplibre-worker.mjs",
+    "predev": "npm run sync:maplibre",
+    "prebuild": "npm run sync:maplibre",
+    "postinstall": "npm run sync:maplibre"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
-    "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.9.0",
     "next": "16.3.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-leaflet": "^5.0.0"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
-    "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

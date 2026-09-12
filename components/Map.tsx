@@ -1,23 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MapLibreMap, LngLat, NavigationControl } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import SearchBox from './SearchBar';
 import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft, type MapFocus } from './PinsLayer';
 import PlacePanel from './PlacePanel';
 import DraftPanel from './DraftPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
+import { configureMaplibre } from '@/lib/maplibre';
 import styles from './map.module.css';
 
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+export const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+
+const INITIAL_CENTER: [number, number] = [4.3571, 52.0116];
+const INITIAL_ZOOM = 13;
 
 type MapProps = {
     userId: string | null;
@@ -49,7 +47,31 @@ export default function Map({ userId }: MapProps) {
     const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
     const [focus, setFocus] = useState<MapFocus | null>(null);
     const [prevUserId, setPrevUserId] = useState(userId);
+    const [map, setMap] = useState<MapLibreMap | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        configureMaplibre();
+
+        const instance = new MapLibreMap({
+            container: containerRef.current,
+            style: MAP_STYLE,
+            center: INITIAL_CENTER,
+            zoom: INITIAL_ZOOM,
+            attributionControl: { compact: true },
+        });
+
+        instance.addControl(new NavigationControl({ visualizePitch: true }), 'bottom-right');
+        instance.on('load', () => setMap(instance));
+
+        return () => {
+            setMap(null);
+            instance.remove();
+        };
+    }, []);
 
     const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
 
@@ -139,9 +161,9 @@ export default function Map({ userId }: MapProps) {
     );
 
     function pinNear(lat: number, lng: number) {
-        const target = L.latLng(lat, lng);
+        const target = new LngLat(lng, lat);
         return pins.find(
-            (pin) => target.distanceTo(L.latLng(pin.lat, pin.lng)) <= EXISTING_PIN_RADIUS_METERS
+            (pin) => target.distanceTo(new LngLat(pin.lng, pin.lat)) <= EXISTING_PIN_RADIUS_METERS
         );
     }
 
@@ -211,27 +233,19 @@ export default function Map({ userId }: MapProps) {
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%' }}>
-            <MapContainer
-            center={[52.0116, 4.3571]} // Delft, change to whatever
-            zoom={13}
-            style={{ height: '100vh', width: '100%' }}
-            >
-                <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                />
+            <div ref={containerRef} style={{ height: '100vh', width: '100%' }} />
 
-                <PinsLayer
-                    pins={pins}
-                    selectedPinId={selectedPinId}
-                    draft={draft}
-                    focus={focus}
-                    onSelectPin={selectPin}
-                    onDropPin={startDraft}
-                />
+            <PinsLayer
+                map={map}
+                pins={pins}
+                selectedPinId={selectedPinId}
+                draft={draft}
+                focus={focus}
+                onSelectPin={selectPin}
+                onDropPin={startDraft}
+            />
 
-                <SearchBox onSelectResult={proposePin} />
-            </MapContainer>
+            <SearchBox onSelectResult={proposePin} />
 
             {draft && (
                 <DraftPanel
