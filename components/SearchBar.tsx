@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useMap } from 'react-leaflet';
 import styles from './map.module.css';
 
 type Result = { display_name: string; lat: string; lon: string };
@@ -11,7 +10,6 @@ type SearchBoxProps = {
 };
 
 export default function SearchBox({ onSelectResult }: SearchBoxProps) {
-    const map = useMap();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<Result[]>([]);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -41,7 +39,6 @@ export default function SearchBox({ onSelectResult }: SearchBoxProps) {
     function selectResult(r: Result) {
         const lat = parseFloat(r.lat);
         const lng = parseFloat(r.lon);
-        map.flyTo([lat, lng], 15);
         onSelectResult(lat, lng, r.display_name.split(',')[0]);
         setQuery(r.display_name);
         setResults([]);

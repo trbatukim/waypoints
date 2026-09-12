@@ -11,7 +11,7 @@ function fillFor(value: number, star: number) {
 
 function Star({ clipId, fill }: { clipId: string; fill: number }) {
     return (
-        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className={styles.star} width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d={STAR_PATH} fill="none" stroke="currentColor" strokeWidth="1.5" />
             <clipPath id={clipId}>
                 <rect x="0" y="0" width={24 * fill} height="24" />

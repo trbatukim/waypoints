@@ -49,22 +49,17 @@
     color: #171717 !important;
 }
 
-.pinPopup {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-}
-
-.pinName {
-    font-weight: 600;
-    color: #0a0a0a;
-    white-space: nowrap;
-}
-
 .starRating {
     display: flex;
+    align-items: center;
     gap: 2px;
+    color: #f1c40f;
+    flex-shrink: 0;
+}
+
+.star {
+    display: block;
+    flex-shrink: 0;
 }
 
 .starButton {
@@ -76,26 +71,8 @@
     border: none;
     background: none;
     padding: 0;
-    color: #f1c40f;
+    color: inherit;
     cursor: pointer;
-}
-
-.reviewSaveButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    padding: 0;
-    background: none;
-    color: #0a0a0a;
-    cursor: pointer;
-}
-
-.reviewSaveButton:hover {
-    background-color: rgba(0, 0, 0, 0.08);
 }
 
 .pinDeleteButton {
@@ -105,53 +82,6 @@
     color: #c0392b;
     font-size: 12px;
     cursor: pointer;
-}
-
-.pinPopupForm {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.draftActions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.draftAddButton {
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    background-color: #171717;
-    color: #fafafa;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.draftAddButton:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.draftCancelButton {
-    border: none;
-    background: none;
-    padding: 0;
-    color: #5a5a5a;
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-.pinPopupInput {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 14px;
-    font-weight: 600;
-    min-width: 180px;
 }
 
 .pinHandle {
@@ -164,62 +94,166 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
     line-height: 1;
     border-radius: 50%;
     cursor: grab;
     user-select: none;
 
-    background-color: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 6px 20px rgba(0, 0, 0, 0.12);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.pinHandle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14), 0 10px 26px rgba(0, 0, 0, 0.16);
 }
 
 .pinHandle:active {
     cursor: grabbing;
 }
 
-:global(.leaflet-popup-content-wrapper) {
-    padding: 10px 28px 10px 16px;
+.reviewArea {
+    height: 120px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.45;
+    resize: none;
+    outline: none;
+}
+
+.reviewArea:focus {
+    border-color: rgba(0, 0, 0, 0.4);
+}
+
+.panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    bottom: 12px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    width: 360px;
     border-radius: 14px;
-    background-color: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 28px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    animation: panelIn 180ms ease-out;
 }
 
-:global(.leaflet-popup-content) {
+@keyframes panelIn {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+}
+
+.panelHeader {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.panelHeading {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.panelTitle {
     margin: 0;
-    width: auto !important;
-    line-height: normal;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: #0a0a0a;
+    overflow-wrap: anywhere;
 }
 
-:global(.leaflet-popup-close-button) {
-    top: 4px !important;
-    right: 8px !important;
-    color: #171717 !important;
+.panelClose {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.06);
+    color: #404040;
     cursor: pointer;
 }
 
-.reviewArea {
-    height: 110px;
-    width: 310px;
-    resize: none;
+.panelClose:hover {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+.panelBody {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    padding: 14px 16px;
+    overflow-y: auto;
+}
+
+.panelEmpty {
+    margin: 0;
+    font-size: 13px;
+    color: #5a5a5a;
+}
+
+.panelFooter {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 640px) {
+    .panel {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        max-height: 55vh;
+        border-radius: 14px 14px 0 0;
+        animation: sheetIn 180ms ease-out;
+    }
+
+    @keyframes sheetIn {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel {
+        animation: none;
+    }
 }
 
 .opinionList {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     margin: 0;
     padding: 0;
     list-style: none;
-    width: 310px;
-    max-height: 190px;
-    overflow-y: auto;
+    width: 100%;
 }
 
 .opinionCard {
@@ -278,27 +312,93 @@
 .reviewForm {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
+    width: 100%;
 }
 
-.reviewActions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.reviewEditButton {
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    border-radius: 8px;
+    padding: 7px 14px;
+    background: none;
+    color: #0a0a0a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.reviewSaveButton:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+.reviewEditButton:hover {
+    background-color: rgba(0, 0, 0, 0.04);
 }
 
-.reviewEditButton,
 .reviewCancelButton {
     border: none;
     background: none;
     padding: 0;
-    color: #0a0a0a;
+    color: #5a5a5a;
     font-size: 12px;
     cursor: pointer;
     text-decoration: underline;
+}
+
+.panelActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.primaryButton {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    background-color: #171717;
+    color: #fafafa;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primaryButton:hover:not(:disabled) {
+    background-color: #000000;
+}
+
+.primaryButton:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.fieldLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a5a5a;
+}
+
+.fieldInput {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 10px;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    color: #0a0a0a;
+    outline: none;
+}
+
+.fieldInput:focus {
+    border-color: rgba(0, 0, 0, 0.4);
+}
+
+.panelCoords {
+    font-size: 12px;
+    color: #5a5a5a;
+    font-variant-numeric: tabular-nums;
 }

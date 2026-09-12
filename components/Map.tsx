@@ -5,7 +5,9 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SearchBox from './SearchBar';
-import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft } from './PinsLayer';
+import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft, type MapFocus } from './PinsLayer';
+import PlacePanel from './PlacePanel';
+import DraftPanel from './DraftPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
 import styles from './map.module.css';
@@ -22,6 +24,7 @@ type MapProps = {
 };
 
 const EXISTING_PIN_RADIUS_METERS = 50;
+const SEARCH_ZOOM = 15;
 
 type ProfileRef = { name: string | null } | { name: string | null }[] | null;
 
@@ -43,8 +46,35 @@ export default function Map({ userId }: MapProps) {
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
     const [draft, setDraft] = useState<PinDraft | null>(null);
+    const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+    const [focus, setFocus] = useState<MapFocus | null>(null);
     const [prevUserId, setPrevUserId] = useState(userId);
     const supabase = createClient();
+
+    const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
+
+    const startDraft = useCallback((lat: number, lng: number, name: string, zoom?: number) => {
+        setDraft({ lat, lng, name });
+        setSelectedPinId(null);
+        setFocus({ lat, lng, zoom, offsetForPanel: true });
+    }, []);
+
+    const updateDraft = useCallback((next: PinDraft) => setDraft(next), []);
+
+    const selectPin = useCallback(
+        (id: string) => {
+            const pin = pins.find((p) => p.id === id);
+            if (!pin) return;
+
+            setSelectedPinId(id);
+            setDraft(null);
+            setFocus({ lat: pin.lat, lng: pin.lng, offsetForPanel: true });
+        },
+        [pins]
+    );
+
+    const closePanel = useCallback(() => setSelectedPinId(null), []);
+    const cancelDraft = useCallback(() => setDraft(null), []);
 
     if (userId !== prevUserId) {
         setPrevUserId(userId);
@@ -118,10 +148,17 @@ export default function Map({ userId }: MapProps) {
     function proposePin(lat: number, lng: number, name: string) {
         if (!userId || pinNear(lat, lng)) {
             setDraft(null);
+            setFocus({ lat, lng, zoom: SEARCH_ZOOM, offsetForPanel: false });
             return;
         }
 
-        setDraft({ lat, lng, name });
+        startDraft(lat, lng, name, SEARCH_ZOOM);
+    }
+
+    function addDraftPin() {
+        if (!draft || draft.name.trim().length === 0) return;
+        addPin(draft.lat, draft.lng, draft.name.trim());
+        setDraft(null);
     }
 
     async function addPin(lat: number, lng: number, name: string) {
@@ -149,6 +186,7 @@ export default function Map({ userId }: MapProps) {
             .select('id');
         if (!error && data && data.length > 0) {
             setPins((prev) => prev.filter((pin) => pin.id !== id));
+            setSelectedPinId((prev) => (prev === id ? null : prev));
         }
     }
 
@@ -185,19 +223,38 @@ export default function Map({ userId }: MapProps) {
 
                 <PinsLayer
                     pins={pins}
-                    userId={userId}
-                    opinions={opinions}
-                    placeOpinions={placeOpinions}
+                    selectedPinId={selectedPinId}
                     draft={draft}
-                    onDraftChange={setDraft}
-                    onAddPin={addPin}
-                    onDeletePin={deletePin}
-                    onSaveOpinion={saveOpinion}
-                    onLoadOpinions={loadPlaceOpinions}
+                    focus={focus}
+                    onSelectPin={selectPin}
+                    onDropPin={startDraft}
                 />
 
                 <SearchBox onSelectResult={proposePin} />
             </MapContainer>
+
+            {draft && (
+                <DraftPanel
+                    draft={draft}
+                    onChange={updateDraft}
+                    onAdd={addDraftPin}
+                    onCancel={cancelDraft}
+                />
+            )}
+
+            {selectedPin && (
+                <PlacePanel
+                    key={selectedPin.id}
+                    pin={selectedPin}
+                    userId={userId}
+                    opinion={opinions[selectedPin.id]}
+                    placeOpinions={placeOpinions[selectedPin.id]}
+                    onClose={closePanel}
+                    onDeletePin={deletePin}
+                    onSaveOpinion={saveOpinion}
+                    onLoadOpinions={loadPlaceOpinions}
+                />
+            )}
 
             {userId && (
                 <div
