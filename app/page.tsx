@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import MapLoader from '@/components/MapLoader';
+import AccountMenu from '@/components/AccountMenu';
 import { createClient } from '@/lib/supabase/server';
-import { signOut } from './actions'
+import styles from './page.module.css';
 
 export default async function Home() {
     const supabase = await createClient();
@@ -11,18 +12,12 @@ export default async function Home() {
         <div>
             <MapLoader userId={user?.id ?? null} />
 
-            <div className='topRightContainer'>
+            <div className={styles.topRight}>
                 {user ? (
-                    <span className='loginLink unselectable'>{user.email}</span>
+                    <AccountMenu email={user.email ?? ''} />
                 ) : (
-                    <Link href="/login" className='loginLink'>Login</Link>
+                    <Link href="/login" className={styles.loginButton}>Log in</Link>
                 )}
-
-                {user ? (
-                    <form action={signOut}>
-                        <button type='submit' className='signOutButton'>Sign Out</button>
-                    </form>
-                ) : null}
             </div>
         </div>
     )
