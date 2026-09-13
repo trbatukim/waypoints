@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,9 +18,11 @@ export const metadata: Metadata = {
     title: "Waypoints"
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+    const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+
     return (
-        <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} data-theme={theme}>
             <body>{children}</body>
         </html>
     );

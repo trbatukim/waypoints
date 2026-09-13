@@ -3,9 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { configureMaplibre } from '@/lib/maplibre';
-
-const BACKGROUND_STYLE = 'https://tiles.openfreemap.org/styles/dark';
+import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
 
 export default function MapBackground() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -17,12 +15,13 @@ export default function MapBackground() {
 
         const map = new MapLibreMap({
             container: containerRef.current,
-            style: BACKGROUND_STYLE,
             center: [4.37586, 51.99625],
             zoom: 13,
             interactive: false,
             attributionControl: false,
         });
+
+        map.setStyle(LIBERTY_STYLE, styleOptionsFor('dark'));
 
         return () => map.remove();
     }, []);

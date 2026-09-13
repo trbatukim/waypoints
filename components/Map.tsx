@@ -9,10 +9,9 @@ import PlacePanel from './PlacePanel';
 import DraftPanel from './DraftPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
-import { configureMaplibre } from '@/lib/maplibre';
+import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
+import { useTheme } from '@/lib/useTheme';
 import styles from './map.module.css';
-
-export const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 const INITIAL_CENTER: [number, number] = [4.3571, 52.0116];
 const INITIAL_ZOOM = 13;
@@ -49,6 +48,8 @@ export default function Map({ userId }: MapProps) {
     const [prevUserId, setPrevUserId] = useState(userId);
     const [map, setMap] = useState<MapLibreMap | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const theme = useTheme();
+    const appliedThemeRef = useRef(theme);
     const supabase = createClient();
 
     useEffect(() => {
@@ -58,13 +59,13 @@ export default function Map({ userId }: MapProps) {
 
         const instance = new MapLibreMap({
             container: containerRef.current,
-            style: MAP_STYLE,
             center: INITIAL_CENTER,
             zoom: INITIAL_ZOOM,
             attributionControl: { compact: true },
         });
 
         instance.addControl(new NavigationControl({ visualizePitch: true }), 'bottom-right');
+        instance.setStyle(LIBERTY_STYLE, styleOptionsFor(appliedThemeRef.current));
         instance.on('load', () => setMap(instance));
 
         return () => {
@@ -72,6 +73,13 @@ export default function Map({ userId }: MapProps) {
             instance.remove();
         };
     }, []);
+
+    useEffect(() => {
+        if (!map || appliedThemeRef.current === theme) return;
+
+        appliedThemeRef.current = theme;
+        map.setStyle(LIBERTY_STYLE, styleOptionsFor(theme));
+    }, [map, theme]);
 
     const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
 
@@ -284,7 +292,7 @@ export default function Map({ userId }: MapProps) {
                         width="28"
                         height="28"
                         viewBox="0 0 297 297"
-                        fill="#171717"
+                        fill="currentColor"
                         xmlns="http://www.w3.org/2000/svg"
                     >
                         <path d="M148.5,0C87.43,0,37.747,49.703,37.747,110.797c0,91.026,99.729,179.905,103.976,183.645 c1.936,1.705,4.356,2.559,6.777,2.559c2.421,0,4.841-0.853,6.778-2.559c4.245-3.739,103.975-92.618,103.975-183.645 C259.253,49.703,209.57,0,148.5,0z M148.5,79.693c16.964,0,30.765,13.953,30.765,31.104c0,17.151-13.801,31.104-30.765,31.104 c-16.964,0-30.765-13.953-30.765-31.104C117.735,93.646,131.536,79.693,148.5,79.693z" />

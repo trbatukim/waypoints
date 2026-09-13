@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { signOut } from '@/app/actions';
+import { setTheme, useTheme } from '@/lib/useTheme';
 import styles from './map.module.css';
 
 export default function AccountMenu({ email }: { email: string }) {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const initial = email.trim().charAt(0).toUpperCase() || '?';
+    const theme = useTheme();
+    const isDark = theme === 'dark';
 
     useEffect(() => {
         if (!open) return;
@@ -50,7 +53,21 @@ export default function AccountMenu({ email }: { email: string }) {
                         <span className={styles.accountEmail}>{email}</span>
                     </div>
 
-                    <form action={signOut}>
+                    <div className={styles.menuRow}>
+                        <span id="dark-mode-label">Dark mode</span>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isDark}
+                            aria-labelledby="dark-mode-label"
+                            className={`${styles.switch} ${isDark ? styles.switchOn : ''}`}
+                            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                        >
+                            <span className={styles.switchThumb} />
+                        </button>
+                    </div>
+
+                    <form action={signOut} className={styles.menuSection}>
                         <button type="submit" role="menuitem" className={styles.menuItemDanger}>
                             Sign out
                         </button>
