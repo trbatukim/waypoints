@@ -1,6 +1,10 @@
 import { ImageResponse } from 'next/og';
+import { PIN_COLOR, PIN_DOT, PIN_HEIGHT, PIN_PATH, PIN_WIDTH } from '@/lib/pinShape';
 
 export function renderAppIcon(size: number) {
+    const height = size * 0.6;
+    const width = (height * PIN_WIDTH) / PIN_HEIGHT;
+
     return new ImageResponse(
         (
             <div
@@ -10,14 +14,11 @@ export function renderAppIcon(size: number) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: '#171717',
                 }}
             >
-                <svg width={size * 0.56} height={size * 0.56} viewBox="0 0 24 24">
-                    <path
-                        fill="#fafafa"
-                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
-                    />
+                <svg width={width} height={height} viewBox={`0 0 ${PIN_WIDTH} ${PIN_HEIGHT}`}>
+                    <path d={PIN_PATH} fill={PIN_COLOR} />
+                    <circle cx={PIN_DOT.cx} cy={PIN_DOT.cy} r={PIN_DOT.r} fill="#ffffff" />
                 </svg>
             </div>
         ),
