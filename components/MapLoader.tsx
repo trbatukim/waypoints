@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 
 const Map = dynamic(() => import('@/components/Map'), {
@@ -9,8 +10,9 @@ const Map = dynamic(() => import('@/components/Map'), {
 
 type MapLoaderProps = {
     userId: string | null;
+    topRight: ReactNode;
 };
 
-export default function MapLoader({ userId }: MapLoaderProps) {
-    return <Map userId={userId} />;
+export default function MapLoader({ userId, topRight }: MapLoaderProps) {
+    return <Map userId={userId} topRight={topRight} />;
 }

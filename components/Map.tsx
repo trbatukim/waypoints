@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { MapLibreMap, LngLat, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import SearchBox from './SearchBar';
@@ -19,6 +19,7 @@ const INITIAL_ZOOM = 13;
 
 type MapProps = {
     userId: string | null;
+    topRight: ReactNode;
 };
 
 const EXISTING_PIN_RADIUS_METERS = 50;
@@ -39,7 +40,7 @@ function profileName(profiles: ProfileRef) {
     return profile?.name?.trim() || 'Someone';
 }
 
-export default function Map({ userId }: MapProps) {
+export default function Map({ userId, topRight }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
@@ -254,7 +255,10 @@ export default function Map({ userId }: MapProps) {
                 onDropPin={startDraft}
             />
 
-            <SearchBox onSelectResult={proposePin} />
+            <div className={styles.topBar}>
+                <SearchBox onSelectResult={proposePin} />
+                <div className={styles.topBarEnd}>{topRight}</div>
+            </div>
 
             {draft && (
                 <DraftPanel
