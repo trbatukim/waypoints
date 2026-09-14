@@ -62,6 +62,11 @@ export default function PlacePanel({
         setEditing(false);
     }
 
+    function deletePin() {
+        if (!window.confirm(`Delete "${pin.name}"? This can't be undone.`)) return;
+        onDeletePin(pin.id);
+    }
+
     const summary =
         average === null ? (
             <span className={styles.ratingEmpty}>No ratings yet</span>
@@ -86,7 +91,7 @@ export default function PlacePanel({
             subtitle={summary}
             onClose={onClose}
             footer={
-                <button type="button" className={styles.pinDeleteButton} onClick={() => onDeletePin(pin.id)}>
+                <button type="button" className={styles.pinDeleteButton} onClick={deletePin}>
                     Delete pin
                 </button>
             }

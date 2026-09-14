@@ -10,15 +10,16 @@ export default async function Home() {
 
     return (
         <div>
-            <MapLoader userId={user?.id ?? null} />
-
-            <div className={styles.topRight}>
-                {user ? (
-                    <AccountMenu email={user.email ?? ''} />
-                ) : (
-                    <Link href="/login" className={styles.loginButton}>Log in</Link>
-                )}
-            </div>
+            <MapLoader
+                userId={user?.id ?? null}
+                topRight={
+                    user ? (
+                        <AccountMenu email={user.email ?? ''} />
+                    ) : (
+                        <Link href="/login" className={styles.loginButton}>Log in</Link>
+                    )
+                }
+            />
         </div>
     )
 }

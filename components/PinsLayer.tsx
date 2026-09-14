@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import type { MapLibreMap } from 'maplibre-gl';
 import styles from './map.module.css';
 import MapMarker from './MapMarker';
+import PinGlyph from './PinGlyph';
 
 export const PIN_DRAG_DATA_TYPE = 'application/x-waypoints-new-pin';
 
@@ -41,20 +42,6 @@ type PinsLayerProps = {
     onSelectPin: (id: string) => void;
     onDropPin: (lat: number, lng: number, name: string) => void;
 };
-
-function PinGlyph({ selected }: { selected: boolean }) {
-    return (
-        <span className={`${styles.pin} ${selected ? styles.pinSelected : ''}`}>
-            <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M13 0C5.82 0 0 5.82 0 13c0 9.2 11.06 19.9 11.53 20.35a2.12 2.12 0 0 0 2.94 0C14.94 32.9 26 22.2 26 13 26 5.82 20.18 0 13 0z"
-                    fill="currentColor"
-                />
-                <circle cx="13" cy="12.6" r="4.6" fill="#ffffff" />
-            </svg>
-        </span>
-    );
-}
 
 export default function PinsLayer({
     map,

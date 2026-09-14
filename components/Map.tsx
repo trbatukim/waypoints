@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { MapLibreMap, LngLat, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import SearchBox from './SearchBar';
+import PinGlyph from './PinGlyph';
 import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft, type MapFocus } from './PinsLayer';
 import PlacePanel from './PlacePanel';
 import DraftPanel from './DraftPanel';
@@ -18,6 +19,7 @@ const INITIAL_ZOOM = 13;
 
 type MapProps = {
     userId: string | null;
+    topRight: ReactNode;
 };
 
 const EXISTING_PIN_RADIUS_METERS = 50;
@@ -38,7 +40,7 @@ function profileName(profiles: ProfileRef) {
     return profile?.name?.trim() || 'Someone';
 }
 
-export default function Map({ userId }: MapProps) {
+export default function Map({ userId, topRight }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
@@ -253,7 +255,10 @@ export default function Map({ userId }: MapProps) {
                 onDropPin={startDraft}
             />
 
-            <SearchBox onSelectResult={proposePin} />
+            <div className={styles.topBar}>
+                <SearchBox onSelectResult={proposePin} />
+                <div className={styles.topBarEnd}>{topRight}</div>
+            </div>
 
             {draft && (
                 <DraftPanel
@@ -288,15 +293,7 @@ export default function Map({ userId }: MapProps) {
                     }}
                     title="Drag onto the map to add a pin"
                 >
-                    <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 297 297"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path d="M148.5,0C87.43,0,37.747,49.703,37.747,110.797c0,91.026,99.729,179.905,103.976,183.645 c1.936,1.705,4.356,2.559,6.777,2.559c2.421,0,4.841-0.853,6.778-2.559c4.245-3.739,103.975-92.618,103.975-183.645 C259.253,49.703,209.57,0,148.5,0z M148.5,79.693c16.964,0,30.765,13.953,30.765,31.104c0,17.151-13.801,31.104-30.765,31.104 c-16.964,0-30.765-13.953-30.765-31.104C117.735,93.646,131.536,79.693,148.5,79.693z" />
-                    </svg>
+                    <PinGlyph />
                 </div>
             )}
         </div>

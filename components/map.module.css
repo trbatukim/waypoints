@@ -31,12 +31,18 @@
     color: var(--danger);
     font-size: 12px;
     cursor: pointer;
+    padding: 0.2rem;
+    border-radius: 6px;
+}
+
+.pinDeleteButton:hover {
+    background-color: rgba(224, 75, 58, 0.15);
 }
 
 .pinHandle {
     position: absolute;
-    bottom: 30px;
-    right: 20px;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    right: calc(20px + env(safe-area-inset-right));
     z-index: 1000;
     width: 52px;
     height: 52px;
@@ -56,7 +62,7 @@
 }
 
 .pinHandle:hover {
-    transform: translateY(-1px);
+    transform: translateY(-6px);
     box-shadow: var(--shadow-raised);
 }
 
@@ -86,9 +92,9 @@
 
 .panel {
     position: absolute;
-    top: 68px;
-    left: 12px;
-    bottom: 12px;
+    top: calc(68px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+    bottom: calc(12px + env(safe-area-inset-bottom));
     z-index: 1100;
     display: flex;
     flex-direction: column;
@@ -180,6 +186,7 @@
         bottom: 0;
         width: auto;
         max-height: 55vh;
+        padding-bottom: env(safe-area-inset-bottom);
         border-radius: 14px 14px 0 0;
         animation: sheetIn 180ms ease-out;
     }
@@ -362,6 +369,7 @@
     padding: 0;
     cursor: pointer;
     line-height: 0;
+    margin-bottom: -2px;
 }
 
 .pin {
@@ -372,6 +380,14 @@
     transform-origin: 50% 100%;
 }
 
+.pin svg {
+    display: block;
+}
+
+.pinHandle .pin {
+    filter: none;
+}
+
 .pinSelected {
     color: #1a73e8;
     transform: scale(1.2);
@@ -379,6 +395,7 @@
 
 .pinDraft {
     display: block;
+    margin-bottom: -2px;
     opacity: 0.75;
 }
 
@@ -404,7 +421,13 @@
 }
 
 :global(.maplibregl-ctrl-bottom-right) {
-    margin-bottom: 92px;
+    margin-bottom: calc(92px + env(safe-area-inset-bottom));
+    margin-right: env(safe-area-inset-right);
+}
+
+:global(.maplibregl-ctrl-bottom-left) {
+    margin-bottom: env(safe-area-inset-bottom);
+    margin-left: env(safe-area-inset-left);
 }
 
 :global(.maplibregl-ctrl-attrib) {
@@ -418,12 +441,31 @@
     color: var(--text-secondary) !important;
 }
 
-.search {
+.topBar {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+    right: calc(12px + env(safe-area-inset-right));
     z-index: 1200;
-    width: 360px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.topBar > * {
+    pointer-events: auto;
+}
+
+.topBarEnd {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.search {
+    flex: 1;
+    min-width: 0;
+    max-width: 360px;
     border-radius: 24px;
     border: 1px solid var(--border);
     background-color: var(--surface);
@@ -600,13 +642,6 @@
 
 .menuItemDanger:hover {
     background-color: var(--danger-fill);
-}
-
-@media (max-width: 640px) {
-    .search {
-        right: 68px;
-        width: auto;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
