@@ -16,6 +16,7 @@ type PlacePanelProps = {
     onDeletePin: (id: string) => void;
     onRenamePin: (id: string, name: string) => void;
     onSaveOpinion: (placeId: string, rating: number, review: string) => void;
+    onDeleteOpinion: (placeId: string) => void;
     onLoadOpinions: (placeId: string) => void;
 };
 
@@ -28,6 +29,7 @@ export default function PlacePanel({
     onDeletePin,
     onRenamePin,
     onSaveOpinion,
+    onDeleteOpinion,
     onLoadOpinions,
 }: PlacePanelProps) {
     const [renaming, setRenaming] = useState(false);
@@ -43,10 +45,8 @@ export default function PlacePanel({
 
     if (opinion !== prevOpinion) {
         setPrevOpinion(opinion);
-        if (opinion) {
-            setRating(opinion.rating);
-            setReview(opinion.note);
-        }
+        setRating(opinion?.rating ?? 0);
+        setReview(opinion?.note ?? '');
     }
 
     const reviews = placeOpinions ?? [];
@@ -63,6 +63,12 @@ export default function PlacePanel({
     function cancelEdit() {
         setRating(opinion?.rating ?? 0);
         setReview(opinion?.note ?? '');
+        setEditing(false);
+    }
+
+    function deleteOpinion() {
+        if (!window.confirm("Delete your review? This can't be undone.")) return;
+        onDeleteOpinion(pin.id);
         setEditing(false);
     }
 
@@ -194,6 +200,12 @@ export default function PlacePanel({
                         <button type="button" className={styles.reviewCancelButton} onClick={cancelEdit}>
                             Cancel
                         </button>
+
+                        {hasOwnReview && (
+                            <button type="button" className={styles.reviewDeleteButton} onClick={deleteOpinion}>
+                                Delete review
+                            </button>
+                        )}
                     </div>
                 </form>
             ) : (

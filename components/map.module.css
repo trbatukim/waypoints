@@ -24,7 +24,8 @@
     cursor: pointer;
 }
 
-.pinDeleteButton {
+.pinDeleteButton,
+.reviewDeleteButton {
     border: none;
     background: none;
     padding: 0;
@@ -35,8 +36,13 @@
     border-radius: 6px;
 }
 
-.pinDeleteButton:hover {
+.pinDeleteButton:hover,
+.reviewDeleteButton:hover {
     background-color: rgba(224, 75, 58, 0.15);
+}
+
+.reviewDeleteButton {
+    margin-left: auto;
 }
 
 .pinHandle {

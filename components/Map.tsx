@@ -257,6 +257,34 @@ export default function Map({ userId, topRight }: MapProps) {
         loadPlaceOpinions(placeId);
     }
 
+    async function deleteOpinion(placeId: string) {
+        if (!userId) return;
+
+        const { data, error } = await supabase
+            .from('opinions')
+            .delete()
+            .eq('place_id', placeId)
+            .eq('user_id', userId)
+            .select('id');
+
+        if (error) {
+            console.error('Failed to delete opinion:', error);
+            return;
+        }
+
+        if (!data || data.length === 0) return;
+
+        setOpinions((prev) => {
+            const next = { ...prev };
+            delete next[placeId];
+            return next;
+        });
+        setPlaceOpinions((prev) => ({
+            ...prev,
+            [placeId]: (prev[placeId] ?? []).filter((o) => o.userId !== userId),
+        }));
+    }
+
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%' }}>
             <div ref={containerRef} style={{ height: '100vh', width: '100%' }} />
@@ -296,6 +324,7 @@ export default function Map({ userId, topRight }: MapProps) {
                     onDeletePin={deletePin}
                     onRenamePin={renamePin}
                     onSaveOpinion={saveOpinion}
+                    onDeleteOpinion={deleteOpinion}
                     onLoadOpinions={loadPlaceOpinions}
                 />
             )}
