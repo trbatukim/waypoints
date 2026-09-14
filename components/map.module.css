@@ -35,8 +35,8 @@
 
 .pinHandle {
     position: absolute;
-    bottom: 30px;
-    right: 20px;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    right: calc(20px + env(safe-area-inset-right));
     z-index: 1000;
     width: 52px;
     height: 52px;
@@ -86,9 +86,9 @@
 
 .panel {
     position: absolute;
-    top: 68px;
-    left: 12px;
-    bottom: 12px;
+    top: calc(68px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+    bottom: calc(12px + env(safe-area-inset-bottom));
     z-index: 1100;
     display: flex;
     flex-direction: column;
@@ -180,6 +180,7 @@
         bottom: 0;
         width: auto;
         max-height: 55vh;
+        padding-bottom: env(safe-area-inset-bottom);
         border-radius: 14px 14px 0 0;
         animation: sheetIn 180ms ease-out;
     }
@@ -404,7 +405,13 @@
 }
 
 :global(.maplibregl-ctrl-bottom-right) {
-    margin-bottom: 92px;
+    margin-bottom: calc(92px + env(safe-area-inset-bottom));
+    margin-right: env(safe-area-inset-right);
+}
+
+:global(.maplibregl-ctrl-bottom-left) {
+    margin-bottom: env(safe-area-inset-bottom);
+    margin-left: env(safe-area-inset-left);
 }
 
 :global(.maplibregl-ctrl-attrib) {
@@ -420,8 +427,8 @@
 
 .search {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
     z-index: 1200;
     width: 360px;
     border-radius: 24px;
@@ -604,7 +611,7 @@
 
 @media (max-width: 640px) {
     .search {
-        right: 68px;
+        right: calc(68px + env(safe-area-inset-right));
         width: auto;
     }
 }

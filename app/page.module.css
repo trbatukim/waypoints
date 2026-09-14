@@ -1,7 +1,7 @@
 .topRight {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+    right: calc(12px + env(safe-area-inset-right));
     z-index: 1200;
 }
 

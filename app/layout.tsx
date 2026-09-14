@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
@@ -15,7 +15,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Waypoints"
+    title: "Waypoints",
+    applicationName: "Waypoints",
+    appleWebApp: {
+        capable: true,
+        title: "Waypoints",
+        statusBarStyle: "black-translucent",
+    },
+};
+
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+        { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
