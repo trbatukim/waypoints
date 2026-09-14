@@ -24,7 +24,8 @@
     cursor: pointer;
 }
 
-.pinDeleteButton {
+.pinDeleteButton,
+.reviewDeleteButton {
     border: none;
     background: none;
     padding: 0;
@@ -35,8 +36,13 @@
     border-radius: 6px;
 }
 
-.pinDeleteButton:hover {
+.pinDeleteButton:hover,
+.reviewDeleteButton:hover {
     background-color: rgba(224, 75, 58, 0.15);
+}
+
+.reviewDeleteButton {
+    margin-left: auto;
 }
 
 .pinHandle {
@@ -139,7 +145,8 @@
     overflow-wrap: anywhere;
 }
 
-.panelClose {
+.panelClose,
+.panelIconButton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -153,7 +160,8 @@
     cursor: pointer;
 }
 
-.panelClose:hover {
+.panelClose:hover,
+.panelIconButton:hover {
     background-color: var(--fill-strong);
 }
 

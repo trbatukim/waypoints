@@ -203,6 +203,10 @@ CREATE POLICY "Authenticated update own opinion" ON "public"."opinions" FOR UPDA
 
 
 
+CREATE POLICY "Authenticated update places" ON "public"."places" FOR UPDATE TO "authenticated" USING (true) WITH CHECK (true);
+
+
+
 CREATE POLICY "Users update own profile" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id"));
 
 
