@@ -69,6 +69,14 @@ Three tables, all with row level security enabled:
 
 Any signed-in user can read everything, add places, and delete places. Reviews can only be edited or deleted by the person who wrote them.
 
+The Postgres schema (tables, RLS policies, functions, grants) lives in [`supabase/schema.sql`](supabase/schema.sql). It's a schema-only dump from the linked Supabase project, generated with:
+
+```bash
+npx supabase db dump -f supabase/schema.sql
+```
+
+Re-run that command after making schema changes to keep the file in sync.
+
 ## License
 
 See [LICENSE](LICENSE).
