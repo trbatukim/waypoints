@@ -8,11 +8,12 @@ type PanelProps = {
     label?: string;
     subtitle?: ReactNode;
     footer?: ReactNode;
+    actions?: ReactNode;
     onClose: () => void;
     children: ReactNode;
 };
 
-export default function Panel({ title, label, subtitle, footer, onClose, children }: PanelProps) {
+export default function Panel({ title, label, subtitle, footer, actions, onClose, children }: PanelProps) {
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') onClose();
@@ -29,6 +30,8 @@ export default function Panel({ title, label, subtitle, footer, onClose, childre
                     <h2 className={styles.panelTitle}>{title}</h2>
                     {subtitle}
                 </div>
+
+                {actions}
 
                 <button type="button" className={styles.panelClose} aria-label="Close" onClick={onClose}>
                     <svg

@@ -222,6 +222,22 @@ export default function Map({ userId, topRight }: MapProps) {
         }
     }
 
+    async function renamePin(id: string, name: string) {
+        const { data, error } = await supabase
+            .from('places')
+            .update({ name })
+            .eq('id', id)
+            .select('id, name, lat, lng, created_by')
+            .single();
+
+        if (error) {
+            console.error('Failed to rename pin:', error);
+            return;
+        }
+
+        if (data) setPins((prev) => prev.map((pin) => (pin.id === id ? data : pin)));
+    }
+
     async function saveOpinion(placeId: string, rating: number, review: string) {
         if (!userId) return;
 
@@ -278,6 +294,7 @@ export default function Map({ userId, topRight }: MapProps) {
                     placeOpinions={placeOpinions[selectedPin.id]}
                     onClose={closePanel}
                     onDeletePin={deletePin}
+                    onRenamePin={renamePin}
                     onSaveOpinion={saveOpinion}
                     onLoadOpinions={loadPlaceOpinions}
                 />

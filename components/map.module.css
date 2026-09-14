@@ -139,7 +139,8 @@
     overflow-wrap: anywhere;
 }
 
-.panelClose {
+.panelClose,
+.panelIconButton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -153,7 +154,8 @@
     cursor: pointer;
 }
 
-.panelClose:hover {
+.panelClose:hover,
+.panelIconButton:hover {
     background-color: var(--fill-strong);
 }
 
