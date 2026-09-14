@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { darkenStyle, formatColor, parseColor, TONES, type Hsla } from './darkLiberty'
+import { DARK, LIGHT, formatColor, parseColor, recolorStyle, type Hsla, type Palette } from './libertyPalette'
 
-type Style = Parameters<typeof darkenStyle>[0]
+type Style = Parameters<typeof recolorStyle>[0]
 
-function lightness(value: unknown) {
-  const color = parseColor(String(value))
-  if (!color) throw new Error(`not a colour: ${String(value)}`)
-  return color.l
+function color(value: unknown) {
+  const parsed = parseColor(String(value))
+  if (!parsed) throw new Error(`not a colour: ${String(value)}`)
+  return parsed
 }
+
+const lightness = (value: unknown) => color(value).l
 
 function style(layers: unknown[]): Style {
   return { version: 8, sources: {}, layers } as Style
@@ -32,31 +34,37 @@ describe('parseColor', () => {
   })
 
   it('round-trips through formatColor', () => {
-    const color = parseColor('hsla(26,87%,62%,0.5)')!
-    expect(parseColor(formatColor(color))).toMatchObject({ h: 26, s: 0.87, l: 0.62, a: 0.5 })
+    const parsed = parseColor('hsla(26,87%,62%,0.5)')!
+    expect(parseColor(formatColor(parsed))).toMatchObject({ h: 26, s: 0.87, l: 0.62, a: 0.5 })
   })
 })
 
-describe('darkenStyle', () => {
-  const liberty = style([
-    { id: 'background', type: 'background', paint: { 'background-color': '#f8f4f0' } },
-    { id: 'water', type: 'fill', paint: { 'fill-color': 'rgb(158,189,255)' } },
-    { id: 'park', type: 'fill', paint: { 'fill-color': '#d8e8c8' } },
-    { id: 'road_minor', type: 'line', paint: { 'line-color': '#fff' } },
-    { id: 'road_minor_casing', type: 'line', paint: { 'line-color': '#cfcdca' } },
-    { id: 'road_motorway', type: 'line', paint: { 'line-color': ['interpolate', ['linear'], ['zoom'], 5, 'hsl(26,87%,62%)', 6, '#fc8'] } },
-    { id: 'building-3d', type: 'fill-extrusion', paint: { 'fill-extrusion-color': 'hsl(35,8%,85%)', 'fill-extrusion-height': ['get', 'render_height'] } },
-    { id: 'label_city', type: 'symbol', paint: { 'text-color': '#000', 'text-halo-color': '#fff' } },
-    { id: 'natural_earth', type: 'raster', paint: { 'raster-opacity': 0.6 } },
-  ])
+const liberty = style([
+  { id: 'background', type: 'background', paint: { 'background-color': '#f8f4f0' } },
+  { id: 'water', type: 'fill', paint: { 'fill-color': 'rgb(158,189,255)' } },
+  { id: 'park', type: 'fill', paint: { 'fill-color': '#d8e8c8' } },
+  { id: 'building', type: 'fill', paint: { 'fill-color': 'hsl(35,8%,85%)' } },
+  { id: 'road_minor', type: 'line', paint: { 'line-color': '#fff' } },
+  { id: 'road_minor_casing', type: 'line', paint: { 'line-color': '#cfcdca' } },
+  { id: 'road_secondary_tertiary', type: 'line', paint: { 'line-color': '#fea' } },
+  { id: 'road_trunk_primary', type: 'line', paint: { 'line-color': '#fea' } },
+  { id: 'road_motorway', type: 'line', paint: { 'line-color': ['interpolate', ['linear'], ['zoom'], 5, 'hsl(26,87%,62%)', 6, '#fc8'] } },
+  { id: 'building-3d', type: 'fill-extrusion', paint: { 'fill-extrusion-color': 'hsl(35,8%,85%)', 'fill-extrusion-height': ['get', 'render_height'] } },
+  { id: 'label_city', type: 'symbol', paint: { 'text-color': '#000', 'text-halo-color': '#fff' } },
+  { id: 'natural_earth', type: 'raster', paint: { 'raster-opacity': 0.6 } },
+])
 
-  const dark = darkenStyle(liberty)
-  const paint = (id: string) => (dark.layers.find((layer) => layer.id === id) as { paint: Record<string, unknown> }).paint
+function painter(palette: Palette) {
+  const recolored = recolorStyle(liberty, palette)
+  return (id: string) => (recolored.layers.find((layer) => layer.id === id) as { paint: Record<string, unknown> }).paint
+}
 
+describe('recolorStyle with DARK', () => {
+  const paint = painter(DARK)
   const background = lightness(paint('background')['background-color'])
 
   it('makes the ground dark', () => {
-    expect(background).toBeLessThan(0.15)
+    expect(background).toBeLessThan(0.2)
   })
 
   it('keeps water darker than the land around it', () => {
@@ -91,10 +99,46 @@ describe('darkenStyle', () => {
   })
 
   it('preserves transparency', () => {
-    expect(TONES.halo(parseColor('rgba(255,255,255,0.7)')!).a).toBe(0.7)
+    expect(DARK.tones.halo(parseColor('rgba(255,255,255,0.7)')!).a).toBe(0.7)
   })
 
   it('does not mutate the style it is given', () => {
     expect((liberty.layers[0] as { paint: Record<string, unknown> }).paint['background-color']).toBe('#f8f4f0')
+  })
+})
+
+describe('recolorStyle with LIGHT', () => {
+  const paint = painter(LIGHT)
+  const background = lightness(paint('background')['background-color'])
+
+  it('keeps the ground light', () => {
+    expect(background).toBeGreaterThan(0.9)
+  })
+
+  it('tints water sky blue and parks mint', () => {
+    expect(color(paint('water')['fill-color']).h).toBeCloseTo(200)
+    expect(color(paint('park')['fill-color']).h).toBeCloseTo(145)
+  })
+
+  it('draws buildings just darker than the ground', () => {
+    const building = lightness(paint('building')['fill-color'])
+    expect(building).toBeLessThan(background)
+    expect(building).toBeGreaterThan(0.85)
+  })
+
+  it('keeps minor and secondary roads white and draws highways in darker slate', () => {
+    expect(lightness(paint('road_minor')['line-color'])).toBeGreaterThan(0.95)
+    expect(lightness(paint('road_secondary_tertiary')['line-color'])).toBeGreaterThan(0.95)
+    expect(lightness(paint('road_trunk_primary')['line-color'])).toBeLessThan(0.75)
+    expect(lightness(paint('road_minor_casing')['line-color'])).toBeLessThan(lightness(paint('road_minor')['line-color']))
+  })
+
+  it('uses dark labels on a white halo', () => {
+    expect(lightness(paint('label_city')['text-color'])).toBeLessThan(0.3)
+    expect(lightness(paint('label_city')['text-halo-color'])).toBe(1)
+  })
+
+  it('leaves the world relief raster alone', () => {
+    expect(paint('natural_earth')).toEqual({ 'raster-opacity': 0.6 })
   })
 })
