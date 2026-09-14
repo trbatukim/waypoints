@@ -1,24 +1,30 @@
 'use client';
 
-import { MapContainer, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef } from 'react';
+import { MapLibreMap } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
 
 export default function MapBackground() {
-    return (
-        <MapContainer
-            center={[51.99625, 4.37586]}
-            zoom={13}
-            zoomControl={false}
-            dragging={false}
-            doubleClickZoom={false}
-            scrollWheelZoom={false}
-            touchZoom={false}
-            boxZoom={false}
-            keyboard={false}
-            attributionControl={false}
-            style={{ height: '100%', width: '100%' }}
-        >
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-        </MapContainer>
-    );
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        configureMaplibre();
+
+        const map = new MapLibreMap({
+            container: containerRef.current,
+            center: [4.37586, 51.99625],
+            zoom: 13,
+            interactive: false,
+            attributionControl: false,
+        });
+
+        map.setStyle(LIBERTY_STYLE, styleOptionsFor('dark'));
+
+        return () => map.remove();
+    }, []);
+
+    return <div ref={containerRef} style={{ height: '100%', width: '100%' }} />;
 }

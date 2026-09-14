@@ -44,10 +44,10 @@ export default async function LoginPage({
                     />
                 </label>
 
-                <span className='unselectable'>
+                <label>
                     <input type="checkbox" name="rememberMe" id="rememberMe" />
                     {' '}Remember me
-                </span>
+                </label>
 
                 {params.error && <p className={styles.error}>{params.error}</p>}
 

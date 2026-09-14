@@ -1,27 +1,27 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MapLibreMap, LngLat, NavigationControl } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import SearchBox from './SearchBar';
-import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft } from './PinsLayer';
+import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft, type MapFocus } from './PinsLayer';
+import PlacePanel from './PlacePanel';
+import DraftPanel from './DraftPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
+import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
+import { useTheme } from '@/lib/useTheme';
 import styles from './map.module.css';
 
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+const INITIAL_CENTER: [number, number] = [4.3571, 52.0116];
+const INITIAL_ZOOM = 13;
 
 type MapProps = {
     userId: string | null;
 };
 
 const EXISTING_PIN_RADIUS_METERS = 50;
+const SEARCH_ZOOM = 15;
 
 type ProfileRef = { name: string | null } | { name: string | null }[] | null;
 
@@ -43,8 +43,68 @@ export default function Map({ userId }: MapProps) {
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
     const [draft, setDraft] = useState<PinDraft | null>(null);
+    const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+    const [focus, setFocus] = useState<MapFocus | null>(null);
     const [prevUserId, setPrevUserId] = useState(userId);
+    const [map, setMap] = useState<MapLibreMap | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const theme = useTheme();
+    const appliedThemeRef = useRef(theme);
     const supabase = createClient();
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        configureMaplibre();
+
+        const instance = new MapLibreMap({
+            container: containerRef.current,
+            center: INITIAL_CENTER,
+            zoom: INITIAL_ZOOM,
+            attributionControl: { compact: true },
+        });
+
+        instance.addControl(new NavigationControl({ visualizePitch: true }), 'bottom-right');
+        instance.setStyle(LIBERTY_STYLE, styleOptionsFor(appliedThemeRef.current));
+        instance.on('load', () => setMap(instance));
+
+        return () => {
+            setMap(null);
+            instance.remove();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!map || appliedThemeRef.current === theme) return;
+
+        appliedThemeRef.current = theme;
+        map.setStyle(LIBERTY_STYLE, styleOptionsFor(theme));
+    }, [map, theme]);
+
+    const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
+
+    const startDraft = useCallback((lat: number, lng: number, name: string, zoom?: number) => {
+        setDraft({ lat, lng, name });
+        setSelectedPinId(null);
+        setFocus({ lat, lng, zoom, offsetForPanel: true });
+    }, []);
+
+    const updateDraft = useCallback((next: PinDraft) => setDraft(next), []);
+
+    const selectPin = useCallback(
+        (id: string) => {
+            const pin = pins.find((p) => p.id === id);
+            if (!pin) return;
+
+            setSelectedPinId(id);
+            setDraft(null);
+            setFocus({ lat: pin.lat, lng: pin.lng, offsetForPanel: true });
+        },
+        [pins]
+    );
+
+    const closePanel = useCallback(() => setSelectedPinId(null), []);
+    const cancelDraft = useCallback(() => setDraft(null), []);
 
     if (userId !== prevUserId) {
         setPrevUserId(userId);
@@ -109,19 +169,26 @@ export default function Map({ userId }: MapProps) {
     );
 
     function pinNear(lat: number, lng: number) {
-        const target = L.latLng(lat, lng);
+        const target = new LngLat(lng, lat);
         return pins.find(
-            (pin) => target.distanceTo(L.latLng(pin.lat, pin.lng)) <= EXISTING_PIN_RADIUS_METERS
+            (pin) => target.distanceTo(new LngLat(pin.lng, pin.lat)) <= EXISTING_PIN_RADIUS_METERS
         );
     }
 
     function proposePin(lat: number, lng: number, name: string) {
         if (!userId || pinNear(lat, lng)) {
             setDraft(null);
+            setFocus({ lat, lng, zoom: SEARCH_ZOOM, offsetForPanel: false });
             return;
         }
 
-        setDraft({ lat, lng, name });
+        startDraft(lat, lng, name, SEARCH_ZOOM);
+    }
+
+    function addDraftPin() {
+        if (!draft || draft.name.trim().length === 0) return;
+        addPin(draft.lat, draft.lng, draft.name.trim());
+        setDraft(null);
     }
 
     async function addPin(lat: number, lng: number, name: string) {
@@ -149,6 +216,7 @@ export default function Map({ userId }: MapProps) {
             .select('id');
         if (!error && data && data.length > 0) {
             setPins((prev) => prev.filter((pin) => pin.id !== id));
+            setSelectedPinId((prev) => (prev === id ? null : prev));
         }
     }
 
@@ -173,31 +241,42 @@ export default function Map({ userId }: MapProps) {
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%' }}>
-            <MapContainer
-            center={[52.0116, 4.3571]} // Delft, change to whatever
-            zoom={13}
-            style={{ height: '100vh', width: '100%' }}
-            >
-                <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                />
+            <div ref={containerRef} style={{ height: '100vh', width: '100%' }} />
 
-                <PinsLayer
-                    pins={pins}
-                    userId={userId}
-                    opinions={opinions}
-                    placeOpinions={placeOpinions}
+            <PinsLayer
+                map={map}
+                pins={pins}
+                selectedPinId={selectedPinId}
+                draft={draft}
+                focus={focus}
+                onSelectPin={selectPin}
+                onDropPin={startDraft}
+            />
+
+            <SearchBox onSelectResult={proposePin} />
+
+            {draft && (
+                <DraftPanel
                     draft={draft}
-                    onDraftChange={setDraft}
-                    onAddPin={addPin}
+                    onChange={updateDraft}
+                    onAdd={addDraftPin}
+                    onCancel={cancelDraft}
+                />
+            )}
+
+            {selectedPin && (
+                <PlacePanel
+                    key={selectedPin.id}
+                    pin={selectedPin}
+                    userId={userId}
+                    opinion={opinions[selectedPin.id]}
+                    placeOpinions={placeOpinions[selectedPin.id]}
+                    onClose={closePanel}
                     onDeletePin={deletePin}
                     onSaveOpinion={saveOpinion}
                     onLoadOpinions={loadPlaceOpinions}
                 />
-
-                <SearchBox onSelectResult={proposePin} />
-            </MapContainer>
+            )}
 
             {userId && (
                 <div
@@ -213,7 +292,7 @@ export default function Map({ userId }: MapProps) {
                         width="28"
                         height="28"
                         viewBox="0 0 297 297"
-                        fill="#171717"
+                        fill="currentColor"
                         xmlns="http://www.w3.org/2000/svg"
                     >
                         <path d="M148.5,0C87.43,0,37.747,49.703,37.747,110.797c0,91.026,99.729,179.905,103.976,183.645 c1.936,1.705,4.356,2.559,6.777,2.559c2.421,0,4.841-0.853,6.778-2.559c4.245-3.739,103.975-92.618,103.975-183.645 C259.253,49.703,209.57,0,148.5,0z M148.5,79.693c16.964,0,30.765,13.953,30.765,31.104c0,17.151-13.801,31.104-30.765,31.104 c-16.964,0-30.765-13.953-30.765-31.104C117.735,93.646,131.536,79.693,148.5,79.693z" />
