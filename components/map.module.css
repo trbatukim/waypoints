@@ -703,3 +703,54 @@
 .switchOn .switchThumb {
     left: 18px;
 }
+
+.hamburgerButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.hamburgerButton:hover {
+    background-color: var(--surface-hover);
+}
+
+.placeList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 -8px;
+    padding: 0;
+    list-style: none;
+    align-self: stretch;
+}
+
+.placeListItem {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.placeListItem:hover,
+.placeListItem:focus-visible {
+    background-color: var(--fill-subtle);
+    outline: none;
+}

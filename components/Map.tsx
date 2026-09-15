@@ -8,6 +8,7 @@ import PinGlyph from './PinGlyph';
 import PinsLayer, { PIN_DRAG_DATA_TYPE, type Pin, type PinDraft, type MapFocus } from './PinsLayer';
 import PlacePanel from './PlacePanel';
 import DraftPanel from './DraftPanel';
+import PlacesPanel, { type PlaceStats } from './PlacesPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
 import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
@@ -44,9 +45,11 @@ export default function Map({ userId, topRight }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
+    const [placeStats, setPlaceStats] = useState<Record<string, PlaceStats>>({});
     const [draft, setDraft] = useState<PinDraft | null>(null);
     const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
     const [focus, setFocus] = useState<MapFocus | null>(null);
+    const [listOpen, setListOpen] = useState(false);
     const [prevUserId, setPrevUserId] = useState(userId);
     const [map, setMap] = useState<MapLibreMap | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -88,6 +91,7 @@ export default function Map({ userId, topRight }: MapProps) {
     const startDraft = useCallback((lat: number, lng: number, name: string, zoom?: number) => {
         setDraft({ lat, lng, name });
         setSelectedPinId(null);
+        setListOpen(false);
         setFocus({ lat, lng, zoom, offsetForPanel: true });
     }, []);
 
@@ -100,6 +104,7 @@ export default function Map({ userId, topRight }: MapProps) {
 
             setSelectedPinId(id);
             setDraft(null);
+            setListOpen(false);
             setFocus({ lat: pin.lat, lng: pin.lng, offsetForPanel: true });
         },
         [pins]
@@ -107,6 +112,47 @@ export default function Map({ userId, topRight }: MapProps) {
 
     const closePanel = useCallback(() => setSelectedPinId(null), []);
     const cancelDraft = useCallback(() => setDraft(null), []);
+    const closeList = useCallback(() => setListOpen(false), []);
+
+    function toggleList() {
+        if (listOpen) {
+            setListOpen(false);
+            return;
+        }
+
+        setSelectedPinId(null);
+        setDraft(null);
+        setListOpen(true);
+        loadPlaceStats();
+    }
+
+    async function loadPlaceStats() {
+        const { data, error } = await supabase.from('opinions').select('place_id, rating');
+
+        if (error) {
+            console.error('Failed to load place ratings:', error);
+            return;
+        }
+
+        const totals: Record<string, { reviewCount: number; ratedCount: number; ratingSum: number }> = {};
+        for (const o of data ?? []) {
+            const entry = (totals[o.place_id] ??= { reviewCount: 0, ratedCount: 0, ratingSum: 0 });
+            entry.reviewCount += 1;
+            if (o.rating) {
+                entry.ratedCount += 1;
+                entry.ratingSum += o.rating / 2;
+            }
+        }
+
+        setPlaceStats(
+            Object.fromEntries(
+                Object.entries(totals).map(([placeId, t]) => [
+                    placeId,
+                    { reviewCount: t.reviewCount, average: t.ratedCount > 0 ? t.ratingSum / t.ratedCount : null },
+                ])
+            )
+        );
+    }
 
     if (userId !== prevUserId) {
         setPrevUserId(userId);
@@ -300,9 +346,24 @@ export default function Map({ userId, topRight }: MapProps) {
             />
 
             <div className={styles.topBar}>
+                <button
+                    type="button"
+                    className={styles.hamburgerButton}
+                    aria-label="All places"
+                    aria-expanded={listOpen}
+                    onClick={toggleList}
+                >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20 7L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M20 12L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M20 17L4 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                </button>
                 <SearchBox onSelectResult={proposePin} />
                 <div className={styles.topBarEnd}>{topRight}</div>
             </div>
+
+            {listOpen && <PlacesPanel pins={pins} stats={placeStats} onSelectPin={selectPin} onClose={closeList} />}
 
             {draft && (
                 <DraftPanel
