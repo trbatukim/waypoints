@@ -19,6 +19,11 @@ export default async function Home() {
                         <Link href="/login" className={styles.loginButton}>Log in</Link>
                     )
                 }
+                bottomLeft={
+                    !user && (
+                        <Link href="/demo" className={styles.loginButton}>Try the demo</Link>
+                    )
+                }
             />
         </div>
     )

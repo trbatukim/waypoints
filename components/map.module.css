@@ -45,6 +45,13 @@
     margin-left: auto;
 }
 
+.bottomLeft {
+    position: absolute;
+    bottom: calc(34px + env(safe-area-inset-bottom));
+    left: calc(20px + env(safe-area-inset-left));
+    z-index: 1000;
+}
+
 .pinHandle {
     position: absolute;
     bottom: calc(30px + env(safe-area-inset-bottom));
