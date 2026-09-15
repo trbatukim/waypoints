@@ -16,3 +16,39 @@
 .loginButton:hover {
     background-color: var(--surface-hover);
 }
+
+.demoBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    padding: 0 6px 0 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    box-shadow: var(--shadow);
+    color: var(--text-secondary);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.demoBadge strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.demoExit {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background-color: var(--fill);
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.demoExit:hover {
+    background-color: var(--fill-strong);
+}

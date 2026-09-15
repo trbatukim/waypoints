@@ -11,6 +11,8 @@ import DraftPanel from './DraftPanel';
 import PlacesPanel, { type PlaceStats } from './PlacesPanel';
 import type { Opinion, PlaceOpinion } from './Opinion';
 import { createClient } from '@/lib/supabase/client';
+import { createSupabaseStore } from '@/lib/placesStore';
+import { createDemoStore } from '@/lib/demoStore';
 import { LIBERTY_STYLE, configureMaplibre, styleOptionsFor } from '@/lib/maplibre';
 import { useTheme } from '@/lib/useTheme';
 import styles from './map.module.css';
@@ -21,27 +23,14 @@ const INITIAL_ZOOM = 13;
 type MapProps = {
     userId: string | null;
     topRight: ReactNode;
+    bottomLeft?: ReactNode;
+    demo?: boolean;
 };
 
 const EXISTING_PIN_RADIUS_METERS = 50;
 const SEARCH_ZOOM = 15;
 
-type ProfileRef = { name: string | null } | { name: string | null }[] | null;
-
-type OpinionRow = {
-    id: string;
-    user_id: string;
-    rating: number | null;
-    note: string | null;
-    profiles: ProfileRef;
-};
-
-function profileName(profiles: ProfileRef) {
-    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
-    return profile?.name?.trim() || 'Someone';
-}
-
-export default function Map({ userId, topRight }: MapProps) {
+export default function Map({ userId, topRight, bottomLeft, demo = false }: MapProps) {
     const [pins, setPins] = useState<Pin[]>([]);
     const [opinions, setOpinions] = useState<Record<string, Opinion>>({});
     const [placeOpinions, setPlaceOpinions] = useState<Record<string, PlaceOpinion[]>>({});
@@ -55,7 +44,7 @@ export default function Map({ userId, topRight }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
     const appliedThemeRef = useRef(theme);
-    const supabase = createClient();
+    const [store] = useState(() => (demo ? createDemoStore() : createSupabaseStore(createClient())));
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -127,31 +116,8 @@ export default function Map({ userId, topRight }: MapProps) {
     }
 
     async function loadPlaceStats() {
-        const { data, error } = await supabase.from('opinions').select('place_id, rating');
-
-        if (error) {
-            console.error('Failed to load place ratings:', error);
-            return;
-        }
-
-        const totals: Record<string, { reviewCount: number; ratedCount: number; ratingSum: number }> = {};
-        for (const o of data ?? []) {
-            const entry = (totals[o.place_id] ??= { reviewCount: 0, ratedCount: 0, ratingSum: 0 });
-            entry.reviewCount += 1;
-            if (o.rating) {
-                entry.ratedCount += 1;
-                entry.ratingSum += o.rating / 2;
-            }
-        }
-
-        setPlaceStats(
-            Object.fromEntries(
-                Object.entries(totals).map(([placeId, t]) => [
-                    placeId,
-                    { reviewCount: t.reviewCount, average: t.ratedCount > 0 ? t.ratingSum / t.ratedCount : null },
-                ])
-            )
-        );
+        const stats = await store.loadPlaceStats();
+        if (stats) setPlaceStats(stats);
     }
 
     if (userId !== prevUserId) {
@@ -161,59 +127,25 @@ export default function Map({ userId, topRight }: MapProps) {
     }
 
     useEffect(() => {
-        supabase
-            .from('places')
-            .select('id, name, lat, lng, created_by')
-            .then(({ data, error }) => {
-                if (error) console.error('Failed to load places:', error);
-                if (!error && data) setPins(data);
-            });
-    }, [supabase]);
+        store.loadPins().then((data) => {
+            if (data) setPins(data);
+        });
+    }, [store]);
 
     useEffect(() => {
         if (!userId) return;
 
-        supabase
-            .from('opinions')
-            .select('place_id, rating, note')
-            .eq('user_id', userId)
-            .then(({ data, error }) => {
-                if (error) console.error('Failed to load opinions:', error);
-                if (!error && data) {
-                    setOpinions(
-                        Object.fromEntries(
-                            data.map((o) => [o.place_id, { rating: o.rating / 2, note: o.note ?? '' }])
-                        )
-                    );
-                }
-            });
-    }, [supabase, userId]);
+        store.loadOwnOpinions(userId).then((data) => {
+            if (data) setOpinions(data);
+        });
+    }, [store, userId]);
 
     const loadPlaceOpinions = useCallback(
         async (placeId: string) => {
-            const { data, error } = await supabase
-                .from('opinions')
-                .select('id, user_id, rating, note, profiles(name)')
-                .eq('place_id', placeId)
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.error('Failed to load opinions for place:', error);
-                return;
-            }
-
-            setPlaceOpinions((prev) => ({
-                ...prev,
-                [placeId]: ((data ?? []) as OpinionRow[]).map((o) => ({
-                    id: o.id,
-                    userId: o.user_id,
-                    authorName: profileName(o.profiles),
-                    rating: (o.rating ?? 0) / 2,
-                    note: o.note?.trim() ?? '',
-                })),
-            }));
+            const data = await store.loadPlaceOpinions(placeId);
+            if (data) setPlaceOpinions((prev) => ({ ...prev, [placeId]: data }));
         },
-        [supabase]
+        [store]
     );
 
     function pinNear(lat: number, lng: number) {
@@ -242,62 +174,25 @@ export default function Map({ userId, topRight }: MapProps) {
     async function addPin(lat: number, lng: number, name: string) {
         if (!userId) return;
 
-        const { data, error } = await supabase
-            .from('places')
-            .insert({ lat, lng, name, created_by: userId })
-            .select('id, name, lat, lng, created_by')
-            .single();
-
-        if (error) {
-            console.error('Failed to add pin:', error);
-            return;
-        }
-
+        const data = await store.addPin(lat, lng, name, userId);
         if (data) setPins((prev) => [...prev, data]);
     }
 
     async function deletePin(id: string) {
-        const { data, error } = await supabase
-            .from('places')
-            .delete()
-            .eq('id', id)
-            .select('id');
-        if (!error && data && data.length > 0) {
+        if (await store.deletePin(id)) {
             setPins((prev) => prev.filter((pin) => pin.id !== id));
             setSelectedPinId((prev) => (prev === id ? null : prev));
         }
     }
 
     async function renamePin(id: string, name: string) {
-        const { data, error } = await supabase
-            .from('places')
-            .update({ name })
-            .eq('id', id)
-            .select('id, name, lat, lng, created_by')
-            .single();
-
-        if (error) {
-            console.error('Failed to rename pin:', error);
-            return;
-        }
-
+        const data = await store.renamePin(id, name);
         if (data) setPins((prev) => prev.map((pin) => (pin.id === id ? data : pin)));
     }
 
     async function saveOpinion(placeId: string, rating: number, review: string) {
         if (!userId) return;
-
-        const { error } = await supabase
-            .from('opinions')
-            .upsert(
-                { place_id: placeId, rating: Math.round(rating * 2), note: review, user_id: userId },
-                { onConflict: 'place_id,user_id' }
-            );
-
-        if (error) {
-            console.error('Failed to save opinion:', error);
-            return;
-        }
+        if (!(await store.saveOpinion(placeId, userId, rating, review))) return;
 
         setOpinions((prev) => ({ ...prev, [placeId]: { rating, note: review } }));
         loadPlaceOpinions(placeId);
@@ -305,20 +200,7 @@ export default function Map({ userId, topRight }: MapProps) {
 
     async function deleteOpinion(placeId: string) {
         if (!userId) return;
-
-        const { data, error } = await supabase
-            .from('opinions')
-            .delete()
-            .eq('place_id', placeId)
-            .eq('user_id', userId)
-            .select('id');
-
-        if (error) {
-            console.error('Failed to delete opinion:', error);
-            return;
-        }
-
-        if (!data || data.length === 0) return;
+        if (!(await store.deleteOpinion(placeId, userId))) return;
 
         setOpinions((prev) => {
             const next = { ...prev };
@@ -389,6 +271,8 @@ export default function Map({ userId, topRight }: MapProps) {
                     onLoadOpinions={loadPlaceOpinions}
                 />
             )}
+
+            {bottomLeft && <div className={styles.bottomLeft}>{bottomLeft}</div>}
 
             {userId && (
                 <div
